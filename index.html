@@ -80,7 +80,7 @@
         .btn-red { background: #ef4444; border-bottom-color: #b91c1c; color: #fff; }
         .btn-gold { background: #ffd700; border-bottom-color: #b8860b; color: #000; }
         
-        /* Highlighted World Boss Button */
+        /* Highlighted World Boss Button (UPDATED) */
         .btn-boss-glow {
             background: linear-gradient(135deg, #ff0000 0%, #ff8c00 100%);
             border-bottom: 6px solid #8b0000;
@@ -90,17 +90,19 @@
             overflow: hidden;
         }
         .btn-boss-glow::after {
-            content: "EARN"; /* CHANGED TO EARN */
+            content: "EARN";
             position: absolute;
             top: 2px;
             right: 2px;
-            background: #fff;
-            color: #f00;
+            background: #ffee00; /* Bright Yellow */
+            color: #000; /* Black Text */
             font-size: 8px;
-            padding: 1px 3px;
+            padding: 1px 4px;
             border-radius: 4px;
-            font-weight: bold;
-            animation: pulse 1s infinite;
+            font-weight: 900;
+            animation: pulse 1.5s infinite;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+            border: 1px solid #000;
         }
 
         /* ID Card */
@@ -180,6 +182,8 @@
         .hp-fill { height: 100%; width: 100%; transition: width 0.5s ease-out, background-color 0.3s; }
         
         .cat-sprite { position: absolute; transition: transform 0.3s; filter: drop-shadow(0 4px 2px rgba(0,0,0,0.3)); }
+        
+        /* RESTORED: Standard Enemy Scale */
         .cat-sprite.enemy { top: 25px; right: 25px; transform: scale(1.4); }
         .cat-sprite.player { bottom: 15px; left: 25px; transform: scale(1.6) scaleX(-1); }
 
@@ -198,12 +202,19 @@
 
         /* Animations */
         @keyframes attack-fwd { 0% { transform: scale(1.6) scaleX(-1) translateX(0); } 50% { transform: scale(1.6) scaleX(-1) translateX(-30px); } 100% { transform: scale(1.6) scaleX(-1) translateX(0); } }
+        /* Adjusted attack animation for Enemy to respect scaling */
         @keyframes attack-enemy { 0% { transform: scale(1.4) translateX(0); } 50% { transform: scale(1.4) translateX(-30px); } 100% { transform: scale(1.4) translateX(0); } }
+        /* Boss attack animation (no scale) */
+        @keyframes attack-boss { 0% { transform: translateX(0); } 50% { transform: translateX(-30px); } 100% { transform: translateX(0); } }
+        
         @keyframes hit-shake { 0%, 100% { transform: translate(0, 0) scale(1.4); } 25% { transform: translate(-5px, 5px) scale(1.4); filter: brightness(5) sepia(1) hue-rotate(-50deg) saturate(5); } 75% { transform: translate(5px, -5px) scale(1.4); } }
+        @keyframes hit-shake-boss { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-5px, 5px) rotate(5deg); filter: brightness(2) sepia(1) saturate(5); } 75% { transform: translate(5px, -5px) rotate(-5deg); } }
         
         .anim-atk-p { animation: attack-fwd 0.3s ease-in-out; }
         .anim-atk-e { animation: attack-enemy 0.3s ease-in-out; }
+        .anim-atk-boss { animation: attack-boss 0.3s ease-in-out; }
         .anim-hit-e { animation: hit-shake 0.4s; }
+        .anim-hit-boss { animation: hit-shake-boss 0.4s; }
         .anim-hit-p { animation: hit-shake 0.4s reverse; }
 
         .hidden { display: none !important; }
@@ -558,7 +569,9 @@
                             <div class="text-[8px] text-purple-600 font-bold truncate" id="enemy-rank">Rank: ???</div>
                             <div class="hp-bar"><div id="enemy-hp-bar" class="hp-fill bg-green-400"></div></div>
                         </div>
-                        <div id="enemy-sprite" class="absolute top-[25px] right-[25px] transition-transform duration-300"></div>
+                        
+                        <!-- REVERTED: Original Class Structure for Normal Enemies -->
+                        <div id="enemy-sprite" class="cat-sprite enemy"></div>
                     </div>
                     <div class="battle-bottom">
                         <div class="status-box player">
@@ -1408,12 +1421,20 @@
 
             elements.playerSprite.innerHTML = renderCat(gameState.dna, gameState.colors, 96);
             
-            // Check if special render function exists (World Boss)
-            if (enemyInfo.renderFunc) {
-                // FIXED: Smaller Size (80px) for Boss Avatar in Battle
-                elements.enemySprite.innerHTML = enemyInfo.renderFunc(80);
+            const enemyEl = elements.enemySprite;
+
+            if (isBoss && enemyInfo.renderFunc) {
+                // Boss Logic: Use specific positioning and remove scaling class
+                enemyEl.className = "absolute top-[35px] right-[35px] transition-transform duration-300"; 
+                // Clear inline scale if present
+                enemyEl.style.transform = '';
+                enemyEl.innerHTML = enemyInfo.renderFunc(80); // 80px size
             } else {
-                elements.enemySprite.innerHTML = renderCat(enemyInfo.dna, enemyInfo.colors, 96);
+                // Normal Enemy Logic: Restore original classes for scaling
+                enemyEl.className = "cat-sprite enemy"; 
+                // Remove any inline styles that might interfere with the class
+                enemyEl.removeAttribute('style');
+                enemyEl.innerHTML = renderCat(enemyInfo.dna, enemyInfo.colors, 96);
             }
             
             elements.playerName.innerText = myName;
@@ -1466,12 +1487,38 @@
 
             const spriteAtk = isPlayer ? elements.playerSprite : elements.enemySprite;
             const spriteDef = isPlayer ? elements.enemySprite : elements.playerSprite;
-            spriteAtk.classList.add(isPlayer ? 'anim-atk-p' : 'anim-atk-e');
-            setTimeout(() => spriteAtk.classList.remove(isPlayer ? 'anim-atk-p' : 'anim-atk-e'), 300);
+            
+            // Animation handling
+            if (isPlayer) {
+                spriteAtk.classList.add('anim-atk-p');
+                setTimeout(() => spriteAtk.classList.remove('anim-atk-p'), 300);
+            } else {
+                // Enemy attacking
+                if (battleState.isBoss) {
+                     spriteAtk.classList.add('anim-atk-boss');
+                     setTimeout(() => spriteAtk.classList.remove('anim-atk-boss'), 300);
+                } else {
+                     spriteAtk.classList.add('anim-atk-e');
+                     setTimeout(() => spriteAtk.classList.remove('anim-atk-e'), 300);
+                }
+            }
             
             setTimeout(() => {
-                spriteDef.classList.add(isPlayer ? 'anim-hit-e' : 'anim-hit-p');
-                setTimeout(() => spriteDef.classList.remove(isPlayer ? 'anim-hit-e' : 'anim-hit-p'), 400);
+                if (isPlayer) {
+                    // Player hit enemy
+                    if (battleState.isBoss) {
+                        spriteDef.classList.add('anim-hit-boss');
+                        setTimeout(() => spriteDef.classList.remove('anim-hit-boss'), 400);
+                    } else {
+                        spriteDef.classList.add('anim-hit-e');
+                        setTimeout(() => spriteDef.classList.remove('anim-hit-e'), 400);
+                    }
+                } else {
+                    // Enemy hit player
+                    spriteDef.classList.add('anim-hit-p');
+                    setTimeout(() => spriteDef.classList.remove('anim-hit-p'), 400);
+                }
+                
                 battleState.turn++;
                 setTimeout(nextTurn, 1000);
             }, 300);
@@ -1845,5 +1892,4 @@
     </script>
 </body>
 </html>
-
 
