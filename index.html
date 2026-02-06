@@ -1,1 +1,1849 @@
-test
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Birthday Catmon: Social Legends</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+SC:wght@400;900&display=swap" rel="stylesheet">
+    <!-- QR Code Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+    <style>
+        :root { --neon-blue: #00f2ff; --lcd-bg: #9ead86; --hp-green: #4ade80; --hp-red: #ef4444; --hp-yellow: #eab308; }
+        
+        body { 
+            background: #111; 
+            color: #fff; 
+            font-family: 'Noto Sans SC', sans-serif; 
+            margin: 0; 
+            min-height: 100vh;
+            overflow-y: auto; 
+            overflow-x: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            touch-action: manipulation;
+        }
+
+        #app {
+            position: relative;
+            z-index: 10;
+            padding: 20px 0;
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pixel-font { font-family: 'Press Start 2P', cursive; }
+        .pixelated { image-rendering: pixelated; }
+
+        /* Background Bubbles */
+        #bg-bubbles { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+        .cat-bubble {
+            position: absolute; bottom: -100px;
+            animation: floatUp linear infinite, wobble ease-in-out infinite alternate;
+            opacity: 0.4; filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
+        }
+        @keyframes floatUp { to { transform: translateY(-120vh); } }
+        @keyframes wobble { from { margin-left: -15px; } to { margin-left: 15px; } }
+
+        /* Digivice & Card Styles */
+        .digivice {
+            width: 340px; background: #222; border: 4px solid #555; border-radius: 40px; padding: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.9); position: relative; z-index: 10;
+        }
+        .lcd-display {
+            background: var(--lcd-bg); border: 6px solid #000; height: 180px; position: relative;
+            display: flex; justify-content: center; align-items: center; overflow: hidden; border-radius: 4px;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.2);
+        }
+        
+        .anim-shake { animation: shake 0.5s infinite; transform-origin: bottom center; }
+        @keyframes shake { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(5deg); } 75% { transform: rotate(-5deg); } }
+
+        .sync-gauge { width: 100%; height: 24px; background: #000; border: 2px solid #666; border-radius: 6px; position: relative; }
+        .safe-zone { position: absolute; left: 40%; width: 20%; height: 100%; background: rgba(0, 242, 255, 0.5); border-left: 2px solid #fff; border-right: 2px solid #fff; box-shadow: 0 0 15px var(--neon-blue); }
+        .pointer { position: absolute; top: -4px; width: 6px; height: 32px; background: #ff4757; border: 2px solid #fff; transform: translateX(-50%); z-index: 10; }
+
+        .btn-main { width: 100%; margin-top: 10px; padding: 14px; background: #ff4757; border-bottom: 6px solid #b33939; color: white; border-radius: 12px; font-size: 14px; cursor: pointer; transition: transform 0.1s; text-align: center; }
+        .btn-main:active { transform: translateY(3px); border-bottom-width: 3px; }
+        .btn-blue { background: #00f2ff; border-bottom-color: #0099aa; color: #000; }
+        .btn-green { background: #4ade80; border-bottom-color: #16a34a; color: #000; }
+        .btn-purple { background: #a855f7; border-bottom-color: #7e22ce; color: #fff; }
+        .btn-orange { background: #f97316; border-bottom-color: #c2410c; color: #fff; }
+        .btn-gray { background: #4b5563; border-bottom-color: #1f2937; color: #ccc; }
+        .btn-red { background: #ef4444; border-bottom-color: #b91c1c; color: #fff; }
+        .btn-gold { background: #ffd700; border-bottom-color: #b8860b; color: #000; }
+        
+        /* Highlighted World Boss Button */
+        .btn-boss-glow {
+            background: linear-gradient(135deg, #ff0000 0%, #ff8c00 100%);
+            border-bottom: 6px solid #8b0000;
+            color: white;
+            text-shadow: 1px 1px 0 #000;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-boss-glow::after {
+            content: "EARN"; /* CHANGED TO EARN */
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: #fff;
+            color: #f00;
+            font-size: 8px;
+            padding: 1px 3px;
+            border-radius: 4px;
+            font-weight: bold;
+            animation: pulse 1s infinite;
+        }
+
+        /* ID Card */
+        .id-card {
+            width: 320px; max-width: 90vw; height: 600px; background: #fff; border-radius: 16px; color: #000;
+            position: relative; border: 6px solid #000; box-shadow: 0 0 60px rgba(0,0,0,0.9);
+            display: flex; flex-direction: column; overflow: visible; z-index: 20;
+        }
+        
+        .card-visual {
+            margin: 20px; margin-bottom: 10px; aspect-ratio: 1/1; background: #f4f4f4; border: 4px solid #000;
+            display: flex; align-items: center; justify-content: center; position: relative;
+            overflow: hidden; border-radius: 12px;
+        }
+
+        .rarity-badge {
+            position: absolute; top: -15px; right: -10px; z-index: 50; padding: 8px 25px; 
+            transform: rotate(12deg); border: 4px solid #fff; font-family: 'Press Start 2P'; 
+            font-size: 14px; box-shadow: 5px 5px 15px rgba(0,0,0,0.4); text-align: center; white-space: nowrap;
+        }
+        .badge-common { background: #555; color: #fff; }
+        .badge-sr { background: #9b59b6; color: #fff; }
+        .badge-ssr {
+            background: linear-gradient(135deg, #ffd700 0%, #ffaa00 50%, #ffd700 100%);
+            color: #8b4500; text-shadow: 0px 1px 0px rgba(255,255,255,0.5);
+            animation: gold-pulse 2s infinite ease-in-out;
+        }
+        .badge-boss {
+            background: #000; color: #ff0000; border-color: #ff0000;
+            text-shadow: 2px 2px 0px #fff;
+        }
+        .badge-ssr::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.8) 50%, transparent 60%);
+            background-size: 200% 200%; animation: shine-sweep 3s infinite linear; pointer-events: none;
+        }
+
+        select, input[type="text"] {
+            appearance: none; -webkit-appearance: none; background-color: #111; border: none;
+            border-bottom: 4px solid #00f2ff; color: #fff; padding: 10px 5px;
+            font-family: 'monospace'; font-size: 16px; text-align: center; outline: none; cursor: pointer;
+            border-radius: 4px 4px 0 0; transition: 0.3s;
+        }
+        
+        input:disabled {
+            background-color: #222 !important;
+            border-bottom: 2px solid #444 !important;
+            color: #888 !important;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* Stat Bars */
+        .stat-row { display: flex; align-items: center; margin-bottom: 4px; font-size: 10px; }
+        .stat-label { width: 30px; font-weight: bold; color: #aaa; }
+        .stat-track { flex-grow: 1; height: 6px; background: #333; border-radius: 3px; margin: 0 8px; overflow: hidden; }
+        .stat-val { height: 100%; background: #00f2ff; }
+        .stat-num { width: 40px; text-align: right; font-family: monospace; color: #fff; }
+
+        /* Battle Styles */
+        .battle-arena {
+            background: #f8f9fa; border: 4px solid #333; border-radius: 12px; 
+            overflow: hidden; position: relative; height: 260px;
+            width: 100%;
+            display: flex; flex-direction: column;
+        }
+        .battle-top, .battle-bottom { flex: 1; position: relative; }
+        
+        .status-box {
+            position: absolute; background: #fff; border: 3px solid #333; border-radius: 8px;
+            padding: 6px; width: 140px; box-shadow: 4px 4px 0 rgba(0,0,0,0.2); z-index: 5;
+        }
+        .status-box.enemy { top: 10px; left: 10px; }
+        .status-box.player { bottom: 10px; right: 10px; }
+        
+        .hp-bar { width: 100%; height: 6px; background: #ddd; border-radius: 3px; margin-top: 4px; border: 1px solid #999; overflow: hidden;}
+        .hp-fill { height: 100%; width: 100%; transition: width 0.5s ease-out, background-color 0.3s; }
+        
+        .cat-sprite { position: absolute; transition: transform 0.3s; filter: drop-shadow(0 4px 2px rgba(0,0,0,0.3)); }
+        .cat-sprite.enemy { top: 25px; right: 25px; transform: scale(1.4); }
+        .cat-sprite.player { bottom: 15px; left: 25px; transform: scale(1.6) scaleX(-1); }
+
+        .battle-log-box {
+            width: 100%; height: 90px; 
+            background: #222; border: 2px solid #555; border-radius: 8px;
+            margin-top: 10px; padding: 10px;
+            color: #00f2ff; font-family: 'Noto Sans SC'; font-size: 11px; line-height: 1.5;
+            overflow-y: auto; text-transform: uppercase;
+        }
+        
+        .rank-badge {
+            background: #000; color: #ffce00; padding: 2px 6px; border-radius: 4px; 
+            font-size: 9px; font-weight: bold; margin-right: 5px; display: inline-block;
+        }
+
+        /* Animations */
+        @keyframes attack-fwd { 0% { transform: scale(1.6) scaleX(-1) translateX(0); } 50% { transform: scale(1.6) scaleX(-1) translateX(-30px); } 100% { transform: scale(1.6) scaleX(-1) translateX(0); } }
+        @keyframes attack-enemy { 0% { transform: scale(1.4) translateX(0); } 50% { transform: scale(1.4) translateX(-30px); } 100% { transform: scale(1.4) translateX(0); } }
+        @keyframes hit-shake { 0%, 100% { transform: translate(0, 0) scale(1.4); } 25% { transform: translate(-5px, 5px) scale(1.4); filter: brightness(5) sepia(1) hue-rotate(-50deg) saturate(5); } 75% { transform: translate(5px, -5px) scale(1.4); } }
+        
+        .anim-atk-p { animation: attack-fwd 0.3s ease-in-out; }
+        .anim-atk-e { animation: attack-enemy 0.3s ease-in-out; }
+        .anim-hit-e { animation: hit-shake 0.4s; }
+        .anim-hit-p { animation: hit-shake 0.4s reverse; }
+
+        .hidden { display: none !important; }
+        
+        #qrcode {
+            background-color: white;
+            padding: 10px;
+            display: inline-block;
+        }
+        #qrcode img {
+            margin: 0 auto;
+        }
+
+        /* --- WORLD BOSS MODULE STYLES (ENHANCED) --- */
+        .boss-card-item {
+            background: #1a1a1a; border: 2px solid #444; border-radius: 8px; padding: 10px;
+            margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
+        }
+        .boss-card-item:hover { transform: translateY(-2px); background: #222; }
+        .boss-card-item.cleared { opacity: 0.6; filter: grayscale(1); border-color: #4ade80; }
+
+        /* Rarity & Theme Colors */
+        .theme-Golden { --theme-color: #ffd700; --theme-glow: rgba(255, 215, 0, 0.7); --theme-text: #ffd700; }
+        .theme-EPIC { --theme-color: #d946ef; --theme-glow: rgba(217, 70, 239, 0.7); --theme-text: #d946ef; }
+        .theme-Common { --theme-color: #9ca3af; --theme-glow: rgba(156, 163, 175, 0.7); --theme-text: #9ca3af; }
+
+        .border-Golden { border-color: #ffd700; }
+        .text-Golden { color: #ffd700; }
+        
+        .border-EPIC { border-color: #d946ef; }
+        .text-EPIC { color: #d946ef; }
+
+        .border-Common { border-color: #9ca3af; }
+        .text-Common { color: #9ca3af; }
+
+        /* Avatar Frames */
+        .boss-avatar-frame {
+            border-radius: 16px; 
+            overflow: hidden; 
+            background: #000;
+            border: 3px solid var(--theme-color);
+            box-shadow: 0 0 20px var(--theme-glow);
+            position: relative;
+        }
+
+        /* Victory Modal Large Avatar */
+        .boss-victory-avatar {
+            width: 140px; height: 140px; 
+            border-radius: 20px; 
+            overflow: hidden; 
+            background: #000;
+            border: 4px solid var(--theme-color);
+            box-shadow: 0 0 30px var(--theme-glow);
+            margin: 0 auto;
+        }
+
+        /* VICTORY MODAL STYLES */
+        .victory-modal-container {
+            width: 320px;
+            max-width: 95vw;
+            border-radius: 12px;
+            background-color: #0f0f0f;
+            border: 3px solid var(--theme-color);
+            box-shadow: 0 0 50px var(--theme-glow), inset 0 0 50px rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px;
+            color: white;
+            position: relative;
+            animation: modalPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes modalPop { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+        .victory-title {
+            font-family: 'Press Start 2P';
+            color: var(--theme-text);
+            font-size: 14px;
+            margin-bottom: 24px;
+            text-shadow: 2px 2px 0px #000;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .victory-badge-name {
+            font-family: 'Noto Sans SC';
+            font-weight: 900;
+            font-style: italic;
+            font-size: 24px;
+            margin-top: 20px;
+            color: #fff;
+            text-transform: uppercase;
+            text-align: center;
+            text-shadow: 0 0 10px var(--theme-glow);
+        }
+
+        .victory-subtitle {
+            color: #666;
+            font-size: 9px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin-bottom: 24px;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .victory-box {
+            width: 100%;
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .victory-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--theme-color);
+            color: #000;
+            font-family: 'Press Start 2P';
+            font-size: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 0 20px var(--theme-glow);
+            transition: all 0.2s;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .victory-btn:active { transform: translateY(2px); }
+
+    </style>
+</head>
+<body>
+    
+    <!-- Audio -->
+    <audio id="bgm" loop preload="none">
+        <source src="https://assets.mixkit.co/music/preview/mixkit-game-level-music-689.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Music Toggle -->
+    <div id="music-toggle" class="fixed top-5 right-5 z-50 bg-black/50 border-2 border-gray-600 rounded-full w-11 h-11 flex items-center justify-center cursor-pointer hover:bg-gray-800 transition-colors">
+        <svg id="music-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+            <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        </svg>
+    </div>
+
+    <div id="bg-bubbles"></div>
+    <div id="flash-fx" class="fixed inset-0 bg-white z-[999] pointer-events-none opacity-0 transition-opacity duration-700"></div>
+
+    <div id="app">
+        <!-- 1. Init View -->
+        <div id="view-init" class="flex flex-col items-center">
+            <div class="digivice text-center space-y-6">
+                <h1 class="pixel-font text-cyan-400 text-xs tracking-widest leading-loose">BIRTHDAY<br>CATMON</h1>
+                <div class="bg-black/50 p-6 rounded-xl border border-gray-600">
+                    <p class="text-[10px] text-gray-400 mb-6 uppercase">选择出生日期</p>
+                    <div class="flex gap-4 justify-center mb-8">
+                        <select id="m-in" class="w-24 text-center"></select>
+                        <select id="d-in" class="w-24 text-center"></select>
+                    </div>
+                    <button id="btn-initialize" class="btn-main pixel-font" style="margin:0">HATCH</button>
+                    
+                    <button id="btn-main-battle" class="btn-main btn-gray pixel-font mt-4">CATMON BATTLE</button>
+                    <p id="main-status-text" class="text-[9px] text-gray-500 mt-2">请先孵化精灵</p>
+                    <p id="msg-init-error" class="text-[10px] text-red-400 mt-2 hidden animate-pulse font-bold"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Game View -->
+        <div id="view-game" class="hidden">
+            <div class="digivice">
+                <div class="lcd-display">
+                    <div id="egg-wrapper" class="inline-block">
+                        <div id="egg-visual" class="pixelated scale-[3]"></div>
+                    </div>
+                    <div id="game-msg" class="absolute bottom-2 text-[10px] font-black opacity-60 uppercase">SYNCING...</div>
+                </div>
+
+                <div class="px-2 mt-4">
+                    <div class="flex justify-between text-[10px] text-cyan-400 font-bold mb-1">
+                        <span>POWER</span>
+                        <span id="prog-text">0%</span>
+                    </div>
+                    <div class="w-full h-3 bg-black border border-gray-600 rounded-full overflow-hidden">
+                        <div id="prog-bar" class="h-full bg-cyan-400 w-0 transition-all duration-75"></div>
+                    </div>
+
+                    <div class="sync-area mt-4">
+                        <div class="sync-gauge">
+                            <div class="safe-zone"></div>
+                            <div id="ptr" class="pointer" style="left: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <button id="btn-sync" class="btn-main pixel-font">SYNC!</button>
+            </div>
+        </div>
+
+        <!-- 3. Card View -->
+        <div id="view-card" class="hidden flex flex-col items-center">
+            <div class="id-card">
+                <div id="badge-rarity" class="rarity-badge">SSR</div>
+                
+                <div class="p-6 pb-2 text-center mt-4">
+                    <h2 id="card-name-cn" class="text-3xl font-black italic leading-tight tracking-tight">--</h2>
+                    <p id="card-name-en" class="text-[10px] font-bold text-gray-500 tracking-wider mt-1 uppercase font-mono">--</p>
+                </div>
+
+                <div class="card-visual">
+                    <div id="card-cat" class="relative z-10" style="transform: scale(2.4)"></div>
+                </div>
+
+                <div class="px-6 space-y-3 flex-grow flex flex-col justify-end pb-6">
+                     <div class="flex justify-between items-center border-b-2 border-black pb-2">
+                         <span class="text-[10px] font-black text-gray-400">RANK</span>
+                         <span id="card-rank" class="text-sm font-black text-purple-600">新手 (0pts)</span>
+                     </div>
+                    <div class="border-b-2 border-black pb-2">
+                        <span class="text-[8px] font-black text-gray-400 block mb-1">TRAITS</span>
+                        <div id="card-gene" class="text-[9px] font-bold text-gray-800 leading-relaxed break-words"></div>
+                    </div>
+                    <div class="flex justify-between items-center border-b-2 border-black pb-2 pt-1">
+                        <span class="text-[10px] font-black text-gray-400">HEX CODE</span>
+                        <span id="card-hex" class="text-[10px] font-bold font-mono">--</span>
+                    </div>
+                    <div class="bg-black text-white p-3 text-center text-[10px] font-black mt-2 rounded">
+                        ZODIAC: <span id="card-zodiac">--</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="w-[320px] mt-4 grid grid-cols-2 gap-3">
+                <button id="btn-goto-prep" class="btn-main pixel-font btn-blue" style="margin:0">BATTLE</button>
+                <button id="btn-restart" class="btn-main pixel-font" style="margin:0">RESET</button>
+            </div>
+        </div>
+
+        <!-- 4. Battle Prep View -->
+        <div id="view-prep" class="hidden flex flex-col items-center">
+            <div class="digivice">
+                <h2 class="text-cyan-400 pixel-font text-center mb-4 text-xs">BATTLE PREPARATION</h2>
+                
+                <div class="bg-black/50 p-4 rounded-xl border border-gray-600 mb-4 relative z-20">
+                    <div class="text-[8px] text-gray-400 mb-1 flex justify-between items-center">
+                        <span>TRAINER NAME</span>
+                        <span id="name-status-icon" class="text-red-400 hidden text-[8px] font-bold">🔒 LOCKED</span>
+                    </div>
+                    <div class="flex gap-2 h-8 items-center w-full">
+                        <input id="input-trainer" type="text" class="flex-1 h-full bg-gray-800 border-b-2 border-cyan-400 text-white font-mono text-center text-sm focus:bg-gray-700 focus:outline-none placeholder-gray-500" value="" maxlength="8" placeholder="ENTER NAME">
+                        <button id="btn-confirm-name" class="h-full bg-cyan-600 text-white px-3 text-[10px] rounded hover:bg-cyan-500 font-bold border-none cursor-pointer z-30">OK</button>
+                    </div>
+                </div>
+
+                <div class="space-y-1 mb-6">
+                    <div class="text-[10px] text-yellow-400 mb-1 text-center font-bold" id="prep-rank-display">
+                        RANK: 新手 (0 PTS)
+                    </div>
+                    <div class="text-[8px] text-gray-400 mb-2 text-center">
+                        <span id="prep-wins" class="text-green-400">0</span> 有效胜场 (Stats +<span id="prep-growth-pct">0</span>%)
+                    </div>
+                    
+                    <div class="stat-row"><div class="stat-label">HP</div><div class="stat-track"><div id="stat-bar-hp" class="stat-val bg-green-400" style="width: 50%"></div></div><div id="stat-val-hp" class="stat-num">100.0</div></div>
+                    <div class="stat-row"><div class="stat-label">ATK</div><div class="stat-track"><div id="stat-bar-atk" class="stat-val bg-red-400" style="width: 50%"></div></div><div id="stat-val-atk" class="stat-num">20.0</div></div>
+                    <div class="stat-row"><div class="stat-label">DEF</div><div class="stat-track"><div id="stat-bar-def" class="stat-val bg-blue-400" style="width: 50%"></div></div><div id="stat-val-def" class="stat-num">15.0</div></div>
+                    <div class="stat-row"><div class="stat-label">SPD</div><div class="stat-track"><div id="stat-bar-spd" class="stat-val bg-yellow-400" style="width: 50%"></div></div><div id="stat-val-spd" class="stat-num">10.0</div></div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="btn-show-qr" class="btn-main btn-blue pixel-font text-[10px]" style="margin:0">MY QR CODE</button>
+                    <button id="btn-scan-qr" class="btn-main btn-green pixel-font text-[10px]" style="margin:0">SCAN FOE</button>
+                    <button id="btn-random-battle" class="btn-main btn-purple pixel-font text-[10px]" style="margin:0">WILD BATTLE</button>
+                    <!-- NEW WORLD BOSS ENTRY -->
+                    <button id="btn-world-boss" class="btn-main btn-boss-glow pixel-font text-[10px] animate-pulse" style="margin:0">WORLD BOSS</button>
+                    <button id="btn-back-card" class="btn-main pixel-font bg-gray-600 border-gray-800 text-[10px]" style="margin:0">BACK</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. QR Show View -->
+        <div id="view-qr-show" class="hidden flex flex-col items-center">
+            <div class="bg-white p-6 rounded-xl border-4 border-black text-center w-[300px]">
+                <h3 class="pixel-font text-black text-xs mb-4">SCAN TO FIGHT ME</h3>
+                
+                <div class="flex justify-center min-h-[180px] bg-white items-center relative">
+                    <div id="qrcode"></div>
+                    <div id="qr-expire-overlay" class="absolute inset-0 bg-white/90 flex flex-col items-center justify-center hidden">
+                        <p class="text-red-600 font-bold text-sm">QR CODE EXPIRED</p>
+                        <p class="text-black text-[10px] mt-1">Please Re-open</p>
+                    </div>
+                </div>
+                
+                <div class="mt-4 pt-4 border-t-2 border-gray-200 text-black font-mono text-[10px] flex flex-col gap-1 items-center bg-gray-100 rounded p-2">
+                    <p class="font-bold text-xs" id="qr-timestamp">--</p>
+                    <p class="text-[9px] text-red-500 font-bold animate-pulse">有效时间: 10 分钟</p>
+                    <p class="font-bold text-sm text-purple-600" id="qr-rank-info">RANK: ???</p>
+                    <p class="font-bold text-xs text-gray-600 mt-1">WINS: <span id="qr-wins">0</span></p>
+                    <p class="font-bold text-xs bg-black text-white inline-block px-3 py-1 rounded mt-1" id="qr-trainer">TRAINER</p>
+                </div>
+                
+                <button id="btn-close-qr" class="mt-6 w-full py-3 bg-black text-white pixel-font text-[10px] rounded hover:bg-gray-800">CLOSE</button>
+            </div>
+        </div>
+
+        <!-- 6. QR Scan View -->
+        <div id="view-qr-scan" class="hidden flex flex-col items-center w-full max-w-md px-4">
+            <div class="bg-black p-4 rounded-xl border border-gray-600 w-full text-center">
+                <h3 class="text-cyan-400 pixel-font text-xs mb-4">SCAN ENEMY</h3>
+                <div id="reader" class="w-full h-[250px] bg-gray-900 mb-4 overflow-hidden rounded border border-gray-700 relative">
+                    <div id="camera-placeholder" class="absolute inset-0 flex items-center justify-center text-gray-500 text-[10px]">
+                        点击下方按钮启动相机
+                    </div>
+                </div>
+                 
+                 <div class="mb-4 space-y-2">
+                    <div class="flex gap-2 justify-center">
+                        <button id="btn-cam-start" class="btn-main btn-green pixel-font text-[10px] py-2 flex-1">📷 启动相机</button>
+                        <button id="btn-cam-stop" class="hidden btn-main btn-red pixel-font text-[10px] py-2 flex-1">⏹ 停止</button>
+                    </div>
+                    
+                    <p id="scan-status" class="text-[9px] text-yellow-400 h-4"></p>
+                    
+                    <!-- Visible Error Box -->
+                    <div id="scan-error-box" class="hidden mt-1 p-2 bg-red-900/90 border border-red-500 rounded text-white text-[10px] font-bold text-center animate-pulse">
+                        <span id="scan-error-text">ERROR</span>
+                    </div>
+
+                    <div class="p-2 bg-gray-900 rounded border border-gray-700 mt-2">
+                        <label for="qr-input-file" class="btn-main btn-orange pixel-font text-[10px] py-2 cursor-pointer block text-white text-center hover:opacity-90" style="margin-top:0">
+                            📁 上传图片
+                        </label>
+                        <input type="file" id="qr-input-file" accept="image/*" class="hidden">
+                    </div>
+                 </div>
+                 
+                <button id="btn-cancel-scan" class="w-full btn-main bg-gray-600 border-gray-800 pixel-font py-2 text-[10px]">返回</button>
+            </div>
+        </div>
+
+        <!-- 7. Battle Arena View -->
+        <div id="view-arena" class="hidden flex flex-col items-center w-full max-w-md px-4">
+            <div class="id-card" style="height: auto; padding: 10px; background: #222; border-color: #444;">
+                <div class="battle-arena">
+                    <div class="battle-top">
+                        <div class="status-box enemy">
+                            <div class="text-[10px] font-black truncate" id="enemy-name">ENEMY</div>
+                            <div class="text-[8px] text-purple-600 font-bold truncate" id="enemy-rank">Rank: ???</div>
+                            <div class="hp-bar"><div id="enemy-hp-bar" class="hp-fill bg-green-400"></div></div>
+                        </div>
+                        <div id="enemy-sprite" class="absolute top-[25px] right-[25px] transition-transform duration-300"></div>
+                    </div>
+                    <div class="battle-bottom">
+                        <div class="status-box player">
+                            <div class="text-[10px] font-black truncate" id="player-name">YOU</div>
+                            <div class="text-[8px] text-purple-600 font-bold truncate" id="player-rank">Rank: ???</div>
+                            <div class="hp-bar"><div id="player-hp-bar" class="hp-fill bg-green-400"></div></div>
+                            <div class="text-[8px] text-right mt-1" id="player-hp-text">100/100</div>
+                        </div>
+                        <div id="player-sprite" class="cat-sprite player"></div>
+                    </div>
+                </div>
+                <div id="battle-log" class="battle-log-box">BATTLE START!</div>
+                <div class="flex gap-2 w-full mt-2">
+                     <button id="btn-leave-battle" class="hidden flex-1 btn-main pixel-font" style="margin:0">LEAVE ARENA</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8. World Boss Dex View -->
+        <div id="view-boss-dex" class="hidden flex flex-col items-center">
+            <div class="digivice">
+                <h2 class="text-yellow-400 pixel-font text-center mb-4 text-xs">WORLD BOSS WANTED</h2>
+                <div class="bg-black/80 p-2 rounded border border-yellow-700 h-[220px] overflow-y-auto" id="boss-list-container">
+                    <!-- Dynamic List -->
+                </div>
+                
+                <div class="bg-gray-800 p-2 rounded mt-2 border border-gray-600">
+                    <div class="text-[9px] text-gray-400 mb-1 text-center">SUMMON DATE</div>
+                    <div class="flex gap-2 justify-center">
+                        <select id="boss-m-in" class="w-16 text-center text-sm"></select>
+                        <select id="boss-d-in" class="w-16 text-center text-sm"></select>
+                    </div>
+                    <div id="boss-signal-status" class="text-center text-[10px] font-mono mt-1 h-4 text-red-500 font-bold">NO SIGNAL</div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    <button id="btn-boss-summon" class="btn-main btn-red pixel-font text-[10px]" style="margin:0">SUMMON</button>
+                    <button id="btn-boss-back" class="btn-main bg-gray-600 border-gray-800 pixel-font text-[10px]" style="margin:0">BACK</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 9. Boss Victory View (Redesigned) -->
+        <div id="view-boss-victory" class="hidden flex flex-col items-center justify-center min-h-screen fixed inset-0 bg-black/90 z-[100]">
+            <!-- Modal Container (Dynamically updated class for border color) -->
+            <div id="boss-victory-modal" class="victory-modal-container theme-Golden">
+                
+                <!-- Title -->
+                <div class="victory-title">BOSS DEFEATED!</div>
+                
+                <!-- Avatar (Dynamic) -->
+                <div id="boss-victory-avatar-container" class="mb-2">
+                    <!-- IMG injected via JS -->
+                </div>
+
+                <!-- Name & Badge -->
+                <h2 id="boss-victory-name" class="victory-badge-name">TRENDS BADGE</h2>
+                <p class="victory-subtitle">LIMITED EDITION COLLECTIBLE</p>
+
+                <!-- Reward Box -->
+                <div class="victory-box">
+                    <p class="text-[9px] font-bold text-gray-500 uppercase">Reward Amount</p>
+                    <p id="boss-victory-reward" class="text-xl font-black text-yellow-400 mt-1">$42,714 Catmon</p>
+                </div>
+
+                <!-- Winner Box -->
+                <div class="victory-box text-left">
+                    <p class="text-[9px] font-bold text-gray-400">WINNER: <span class="text-cyan-400" id="boss-victory-player">PLAYER</span></p>
+                    <p class="text-[9px] font-bold text-gray-400 mt-1">TIME: <span id="boss-victory-time">--</span></p>
+                </div>
+
+                <!-- Task Box -->
+                <div class="victory-box bg-yellow-900/30 border-yellow-700/50">
+                    <p class="text-[9px] text-yellow-500 font-bold leading-relaxed">
+                        任务: 截图此页面 + 战斗QR码<br>
+                        评论在 <a href="https://x.com/catmonapp?s=21&t=Jv1xatb1cP2aAKM3um6iZA" target="_blank" class="underline text-white hover:text-cyan-400">官方帖子</a> 下
+                    </p>
+                </div>
+
+                <!-- Claim Button -->
+                <button id="btn-boss-claim" class="victory-btn">CLAIM & CLOSE</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIG ---
+        const SAVE_KEY = 'catmon_save_v14_fixed';
+        const RANKS = ["新手", "见习", "普通", "精英", "资深", "专家", "大师", "宗师", "传说", "王者", "联盟冠军"];
+        
+        const CONFIG = {
+            naming: {
+                grades: { SSR: { en: "Gold", cn: "黄金" }, SR:  { en: "Mystic", cn: "秘法" }, COMMON: { en: "Wild", cn: "原生" } },
+                months: [ { en: "Frost", cn: "霜" }, { en: "Mist", cn: "雾" }, { en: "Leaf", cn: "叶" }, { en: "Bloom", cn: "花" }, { en: "Thunder", cn: "雷" }, { en: "Aqua", cn: "水" }, { en: "Flame", cn: "炎" }, { en: "Sun", cn: "日" }, { en: "Earth", cn: "岩" }, { en: "Wind", cn: "风" }, { en: "Shadow", cn: "影" }, { en: "Snow", cn: "雪" } ],
+                days: [ { en: "Claw", cn: "爪" }, { en: "Fang", cn: "牙" }, { en: "Wing", cn: "翼" }, { en: "Tail", cn: "尾" }, { en: "Eye", cn: "瞳" }, { en: "Shell", cn: "甲" }, { en: "Horn", cn: "角" }, { en: "Scale", cn: "鳞" }, { en: "Fin", cn: "鳍" }, { en: "Beak", cn: "喙" }, { en: "Paw", cn: "掌" }, { en: "Fur", cn: "毛" }, { en: "Bone", cn: "骨" }, { en: "Heart", cn: "心" }, { en: "Soul", cn: "魂" }, { en: "Spirit", cn: "灵" }, { en: "Mind", cn: "念" }, { en: "Dream", cn: "梦" }, { en: "Star", cn: "星" }, { en: "Moon", cn: "月" }, { en: "Rune", cn: "纹" }, { en: "Glyph", cn: "印" }, { en: "Orb", cn: "珠" }, { en: "Gem", cn: "玉" }, { en: "Crystal", cn: "晶" }, { en: "Dust", cn: "尘" }, { en: "Ash", cn: "灰" }, { en: "Spark", cn: "火" }, { en: "Wave", cn: "波" }, { en: "Pulse", cn: "脉" }, { en: "Nova", cn: "爆" } ]
+            },
+            pixelData: {
+                ears: [ { nameCN: "尖耳", nameEN: "Pointy", p: [[3,0,2,4], [11,0,2,4]] }, { nameCN: "圆耳", nameEN: "Round", p: [[2,2,3,2], [11,2,3,2]] }, { nameCN: "折耳", nameEN: "Folded", p: [[1,3,2,3], [13,3,2,3]] } ],
+                eyes: [ { nameCN: "豆豆", nameEN: "Dot", p: [[5,6,1,2], [10,6,1,2]] }, { nameCN: "大圆", nameEN: "Big", p: [[4,6,2,2], [10,6,2,2]] }, { nameCN: "眯眯", nameEN: "Line", p: [[4,7,2,1], [10,7,2,1]] } ],
+                tails: [ { nameCN: "细直", nameEN: "Thin", p: [[12,10,1,1], [13,9,1,1], [14,7,1,3]] }, { nameCN: "S型", nameEN: "S-Type", p: [[12,10,1,1], [13,9,1,1], [13,8,1,1], [14,7,1,1], [14,6,1,1]] }, { nameCN: "小卷", nameEN: "Curly", p: [[12,10,1,1], [13,10,1,1], [14,9,1,1], [13,8,1,1]] } ],
+                patterns: [ { nameCN: "纯色", nameEN: "Solid", head: [], belly: [] }, { nameCN: "花斑", nameEN: "Spotted", head: [[3,3,3,4]], belly: [[6,10,2,2]] }, { nameCN: "虎纹", nameEN: "Striped", head: [[7,3,2,3], [4,5,1,2], [11,5,1,2]], belly: [[5,9,6,1], [5,11,6,1]] } ]
+            }
+        };
+
+        // --- STATE & DOM ---
+        const elements = {
+            app: document.getElementById('app'),
+            bg: document.getElementById('bg-bubbles'),
+            viewInit: document.getElementById('view-init'),
+            viewGame: document.getElementById('view-game'),
+            viewCard: document.getElementById('view-card'),
+            viewPrep: document.getElementById('view-prep'),
+            viewQrShow: document.getElementById('view-qr-show'),
+            viewQrScan: document.getElementById('view-qr-scan'),
+            viewArena: document.getElementById('view-arena'),
+            // ADDED EXPLICITLY HERE TO PREVENT UNDEFINED ERRORS
+            viewBossDex: document.getElementById('view-boss-dex'),
+            viewBossVictory: document.getElementById('view-boss-victory'),
+            
+            mIn: document.getElementById('m-in'),
+            dIn: document.getElementById('d-in'),
+            btnInitialize: document.getElementById('btn-initialize'),
+            btnMainBattle: document.getElementById('btn-main-battle'),
+            msgInitError: document.getElementById('msg-init-error'),
+            mainStatusText: document.getElementById('main-status-text'),
+            ptr: document.getElementById('ptr'),
+            progText: document.getElementById('prog-text'),
+            progBar: document.getElementById('prog-bar'),
+            gameMsg: document.getElementById('game-msg'),
+            eggVisual: document.getElementById('egg-visual'),
+            btnSync: document.getElementById('btn-sync'),
+            lcd: document.querySelector('.lcd-display'),
+            eggWrapper: document.getElementById('egg-wrapper'),
+            cardCat: document.getElementById('card-cat'),
+            cardNameCN: document.getElementById('card-name-cn'),
+            cardNameEN: document.getElementById('card-name-en'),
+            cardGene: document.getElementById('card-gene'),
+            cardHex: document.getElementById('card-hex'),
+            cardZodiac: document.getElementById('card-zodiac'),
+            cardRank: document.getElementById('card-rank'),
+            badgeRarity: document.getElementById('badge-rarity'),
+            btnRestart: document.getElementById('btn-restart'),
+            btnGotoPrep: document.getElementById('btn-goto-prep'),
+            flash: document.getElementById('flash-fx'),
+            inputTrainer: document.getElementById('input-trainer'),
+            btnConfirmName: document.getElementById('btn-confirm-name'),
+            nameStatusIcon: document.getElementById('name-status-icon'),
+            btnShowQr: document.getElementById('btn-show-qr'),
+            btnScanQr: document.getElementById('btn-scan-qr'),
+            btnRandomBattle: document.getElementById('btn-random-battle'),
+            btnBackCard: document.getElementById('btn-back-card'),
+            prepWins: document.getElementById('prep-wins'),
+            prepGrowthPct: document.getElementById('prep-growth-pct'),
+            prepRankDisplay: document.getElementById('prep-rank-display'),
+            statBarHp: document.getElementById('stat-bar-hp'),
+            statValHp: document.getElementById('stat-val-hp'),
+            statBarAtk: document.getElementById('stat-bar-atk'),
+            statValAtk: document.getElementById('stat-val-atk'),
+            statBarDef: document.getElementById('stat-bar-def'),
+            statValDef: document.getElementById('stat-val-def'),
+            statBarSpd: document.getElementById('stat-bar-spd'),
+            statValSpd: document.getElementById('stat-val-spd'),
+            qrcodeContainer: document.getElementById("qrcode"),
+            btnCloseQr: document.getElementById('btn-close-qr'),
+            qrWins: document.getElementById('qr-wins'),
+            qrTrainer: document.getElementById('qr-trainer'),
+            qrTimestamp: document.getElementById('qr-timestamp'),
+            qrRankInfo: document.getElementById('qr-rank-info'),
+            btnCancelScan: document.getElementById('btn-cancel-scan'),
+            qrInputFile: document.getElementById('qr-input-file'),
+            btnCamStart: document.getElementById('btn-cam-start'),
+            btnCamStop: document.getElementById('btn-cam-stop'),
+            scanStatus: document.getElementById('scan-status'),
+            scanErrorBox: document.getElementById('scan-error-box'),
+            scanErrorText: document.getElementById('scan-error-text'),
+            cameraPlaceholder: document.getElementById('camera-placeholder'),
+            playerSprite: document.getElementById('player-sprite'),
+            enemySprite: document.getElementById('enemy-sprite'),
+            playerHpBar: document.getElementById('player-hp-bar'),
+            enemyHpBar: document.getElementById('enemy-hp-bar'),
+            playerHpText: document.getElementById('player-hp-text'),
+            playerName: document.getElementById('player-name'),
+            enemyName: document.getElementById('enemy-name'),
+            playerRank: document.getElementById('player-rank'),
+            enemyRank: document.getElementById('enemy-rank'),
+            battleLog: document.getElementById('battle-log'),
+            btnLeaveBattle: document.getElementById('btn-leave-battle'),
+            bgm: document.getElementById('bgm'),
+            musicToggle: document.getElementById('music-toggle'),
+            musicIcon: document.getElementById('music-icon'),
+            qrExpireOverlay: document.getElementById('qr-expire-overlay')
+        };
+
+        let gameState = {
+            active: false, m: 1, d: 1, seed: 0, rarity: 'COMMON', uid: '',
+            baseStats: { hp: 100, atk: 20, def: 10, spd: 10 }, 
+            trainerName: "", nameLocked: false, 
+            battleRecord: { wins: 0, losses: 0, rankPoints: 0, statWins: 0 },
+            isMuted: false, 
+            dna: {}, colors: {},
+            prog: 0, ptr: 0, dir: 1, lastTime: 0,
+            isProcessingScan: false,
+            // BOSS ADDITION: Track cleared bosses
+            bossCleared: [] 
+        };
+
+        let html5QrCode = null; 
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initBackgroundBubbles();
+            initSelects();
+            bindEvents();
+            checkSaveStatus();
+            initBossModule(); // Initialize Boss Module
+        });
+
+        function bindEvents() {
+            elements.btnInitialize.addEventListener('click', () => { tryPlayMusic(); startGame(); });
+            
+            elements.btnMainBattle.addEventListener('click', () => {
+                tryPlayMusic();
+                const loaded = loadGameData();
+                if (loaded && (gameState.active || gameState.nameLocked)) {
+                    deriveVisuals();
+                    switchView('viewPrep');
+                    updateStatsUI();
+                    checkNameLock();
+                } else {
+                    elements.msgInitError.innerText = "⚠️ 尚未发现存档，请先孵化！";
+                    elements.msgInitError.classList.remove('hidden');
+                    setTimeout(() => { elements.msgInitError.classList.add('hidden'); }, 3000);
+                }
+            });
+            
+            elements.btnSync.addEventListener('pointerdown', (e) => { e.preventDefault(); doStrike(); });
+            elements.btnRestart.addEventListener('click', resetGame);
+            elements.musicToggle.addEventListener('click', toggleMusic);
+            
+            elements.btnGotoPrep.addEventListener('click', () => {
+                updateStatsUI();
+                checkNameLock();
+                switchView('viewPrep');
+            });
+            elements.btnBackCard.addEventListener('click', () => switchView('viewCard'));
+
+            elements.btnConfirmName.addEventListener('click', () => {
+                const newVal = elements.inputTrainer.value.trim().toUpperCase();
+                if(!newVal) {
+                    alert("请输入有效的训练家名字！");
+                    return;
+                }
+                gameState.trainerName = newVal;
+                gameState.nameLocked = true;
+                saveGameData();
+                checkNameLock();
+                updateDynamicText();
+            });
+
+            elements.btnShowQr.addEventListener('click', showQrCode);
+            elements.btnCloseQr.addEventListener('click', () => switchView('viewPrep'));
+            
+            elements.btnScanQr.addEventListener('click', () => {
+                resetScannerUI();
+                switchView('viewQrScan');
+            });
+            elements.btnCamStart.addEventListener('click', startScanner);
+            elements.btnCamStop.addEventListener('click', stopScannerCameraOnly);
+            elements.btnCancelScan.addEventListener('click', fullStopScanner);
+            
+            elements.qrInputFile.addEventListener('click', (e) => { e.target.value = null; });
+            elements.qrInputFile.addEventListener('change', handleFileScan);
+            
+            elements.btnRandomBattle.addEventListener('click', startRandomBattle);
+            elements.btnLeaveBattle.addEventListener('click', () => {
+                 updateStatsUI();
+                 switchView('viewPrep');
+            });
+        }
+
+        // --- CORE ---
+        function checkSaveStatus() {
+            const loaded = loadGameData();
+            if (loaded && (gameState.active || gameState.nameLocked)) {
+                elements.btnMainBattle.classList.remove('btn-gray');
+                elements.btnMainBattle.classList.add('btn-green');
+                elements.btnMainBattle.innerText = "继续战斗";
+                elements.mainStatusText.innerText = "✅ 检测到存档";
+            }
+        }
+
+        function saveGameData() {
+            const data = {
+                active: gameState.active, m: gameState.m, d: gameState.d, seed: gameState.seed,
+                rarity: gameState.rarity, baseStats: gameState.baseStats,
+                trainerName: gameState.trainerName, nameLocked: gameState.nameLocked,
+                battleRecord: gameState.battleRecord,
+                uid: gameState.uid,
+                bossCleared: gameState.bossCleared || []
+            };
+            localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+        }
+
+        function loadGameData() {
+            const saved = localStorage.getItem(SAVE_KEY);
+            if (saved) {
+                const data = JSON.parse(saved);
+                if(data.active || data.nameLocked) {
+                    Object.assign(gameState, data);
+                    // Generate UID if missing (legacy save support)
+                    if(!gameState.uid) {
+                        gameState.uid = Math.random().toString(36).substring(2) + Date.now().toString(36);
+                        saveGameData();
+                    }
+                    if(!gameState.battleRecord.rankPoints) gameState.battleRecord.rankPoints = 0;
+                    if(!gameState.battleRecord.statWins) gameState.battleRecord.statWins = 0;
+                    if(!gameState.bossCleared) gameState.bossCleared = [];
+                    deriveVisuals(); 
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function deriveVisuals() {
+            const gen = generateCatData(gameState.seed, gameState.rarity);
+            gameState.dna = gen.dna;
+            gameState.colors = gen.colors;
+        }
+
+        function checkNameLock() {
+            elements.inputTrainer.value = gameState.trainerName;
+            if (gameState.nameLocked) {
+                elements.inputTrainer.disabled = true;
+                elements.btnConfirmName.style.display = 'none';
+                elements.nameStatusIcon.classList.remove('hidden');
+            } else {
+                elements.inputTrainer.disabled = false;
+                elements.btnConfirmName.style.display = 'block';
+                elements.nameStatusIcon.classList.add('hidden');
+            }
+        }
+        
+        function updateDynamicText() {
+            elements.qrTrainer.innerText = gameState.trainerName || "PLAYER";
+        }
+
+        function switchView(viewName) {
+            ['viewInit', 'viewGame', 'viewCard', 'viewPrep', 'viewQrShow', 'viewQrScan', 'viewArena', 'viewBossDex', 'viewBossVictory'].forEach(v => {
+                if(elements[v]) elements[v].classList.add('hidden');
+            });
+            if(elements[viewName]) elements[viewName].classList.remove('hidden');
+            if(viewName === 'viewCard') renderCardDetails();
+        }
+
+        function generateCatData(seed, rarity) {
+            const dna = { ear: seed % 3, eye: (seed+2)%3, tail: (seed+5)%3, pattern: (seed+7)%3 };
+            const hue = (seed * 137) % 360;
+            const colors = {
+                main: `hsl(${hue}, 85%, 60%)`, shadow: `hsl(${hue}, 85%, 35%)`, 
+                highlight: `hsl(${hue}, 85%, 88%)`, pattern: `hsl(${hue}, 90%, 25%)`
+            };
+            
+            let mult = 1.0;
+            if (rarity === 'SR') mult = 1.05;
+            if (rarity === 'SSR') mult = 1.10;
+            
+            const baseStats = {
+                hp: Math.floor((100 + (seed % 60)) * mult),
+                atk: Math.floor((20 + (seed % 15)) * mult),
+                def: Math.floor((10 + (seed % 10)) * mult),
+                spd: Math.floor((10 + ((seed * 3) % 15)) * mult)
+            };
+            return { dna, colors, baseStats };
+        }
+
+        function startGame() {
+            const m = parseInt(elements.mIn.value);
+            const d = parseInt(elements.dIn.value);
+            if(!m || !d) return;
+
+            gameState.m = m; gameState.d = d;
+            gameState.seed = m * 31 + d;
+            gameState.battleRecord = { wins: 0, losses: 0, rankPoints: 0, statWins: 0 };
+            gameState.trainerName = ""; // Empty on new game
+            gameState.nameLocked = false;
+            // Generate New UID
+            gameState.uid = Math.random().toString(36).substring(2) + Date.now().toString(36);
+            gameState.bossCleared = [];
+            
+            const rand = Math.random();
+            // 3% SSR, 27% SR, 70% Common
+            gameState.rarity = rand < 0.03 ? "SSR" : (rand < 0.30 ? "SR" : "COMMON");
+            
+            const data = generateCatData(gameState.seed, gameState.rarity);
+            gameState.baseStats = data.baseStats;
+            gameState.active = true;
+            deriveVisuals();
+
+            switchView('viewGame');
+            elements.eggVisual.innerHTML = drawEgg(gameState.colors.main);
+            
+            gameState.prog = 0; gameState.lastTime = 0;
+            requestAnimationFrame(gameLoop);
+        }
+
+        function finishGame() {
+            gameState.active = true;
+            elements.flash.style.opacity = 1;
+            saveGameData();
+            checkSaveStatus();
+            setTimeout(() => {
+                switchView('viewCard');
+                elements.flash.style.opacity = 0;
+            }, 800);
+        }
+
+        function getRankName(pts) {
+            const idx = Math.min(RANKS.length - 1, Math.floor(pts / 10));
+            return RANKS[idx];
+        }
+
+        function getRankTier(pts) {
+            return Math.min(10, Math.floor(pts / 10));
+        }
+
+        function renderCardDetails() {
+            elements.cardCat.innerHTML = renderCat(gameState.dna, gameState.colors, 128);
+            const grade = CONFIG.naming.grades[gameState.rarity];
+            const monthWord = CONFIG.naming.months[gameState.m - 1];
+            const dayWord = CONFIG.naming.days[Math.min(30, gameState.d - 1)];
+            
+            elements.cardNameCN.innerText = `${grade.cn}${monthWord.cn}${dayWord.cn}兽`;
+            elements.cardNameEN.innerText = `${grade.en} ${monthWord.en}-${dayWord.en} Mon`;
+            elements.badgeRarity.innerText = gameState.rarity;
+            elements.badgeRarity.className = `rarity-badge badge-${gameState.rarity.toLowerCase()}`;
+            elements.cardZodiac.innerText = getZodiac(gameState.m, gameState.d);
+            elements.cardHex.innerText = gameState.colors.main.toUpperCase();
+            elements.cardHex.style.color = gameState.colors.shadow;
+
+            const pts = gameState.battleRecord.rankPoints || 0;
+            const rName = getRankName(pts);
+            elements.cardRank.innerText = `${rName} (${pts}pts)`;
+
+            const d = gameState.dna;
+            const traits = [CONFIG.pixelData.ears[d.ear], CONFIG.pixelData.eyes[d.eye], CONFIG.pixelData.tails[d.tail], CONFIG.pixelData.patterns[d.pattern]];
+            elements.cardGene.innerHTML = traits.map(t => `${t.nameCN}<span class="text-[7px] text-gray-400">(${t.nameEN})</span>`).join(' / ');
+        }
+
+        function getGrownStats(base, statWins) {
+            // Each statWin adds 1%
+            const growthFactor = 1 + (statWins * 0.01);
+            const calc = (val) => parseFloat((val * growthFactor).toFixed(1)); 
+            return {
+                hp: calc(base.hp),
+                atk: calc(base.atk),
+                def: calc(base.def),
+                spd: calc(base.spd)
+            };
+        }
+
+        function updateStatsUI() {
+            const sw = gameState.battleRecord.statWins || 0;
+            const s = getGrownStats(gameState.baseStats, sw);
+            const set = (el, val, txt) => { el.style.width = Math.min(100, (val/250)*100)+'%'; txt.innerText = val.toFixed(1); };
+            
+            set(elements.statBarHp, s.hp, elements.statValHp);
+            set(elements.statBarAtk, s.atk, elements.statValAtk);
+            set(elements.statBarDef, s.def, elements.statValDef);
+            set(elements.statBarSpd, s.spd, elements.statValSpd);
+            
+            elements.prepWins.innerText = sw; 
+            elements.prepGrowthPct.innerText = sw; 
+            
+            const pts = gameState.battleRecord.rankPoints || 0;
+            elements.prepRankDisplay.innerText = `RANK: ${getRankName(pts)} (${pts} PTS)`;
+        }
+
+        function showQrCode() {
+            // 1. Data Prep
+            const pts = gameState.battleRecord.rankPoints || 0;
+            const sw = gameState.battleRecord.statWins || 0;
+            const rMap = { "COMMON":0, "SR":1, "SSR":2 };
+            const now = new Date();
+            const timestamp = now.getTime();
+            
+            // 2. UI Update (Safe)
+            try {
+                switchView('viewQrShow');
+                
+                if(elements.qrcodeContainer) elements.qrcodeContainer.innerHTML = "";
+                if(elements.qrExpireOverlay) elements.qrExpireOverlay.classList.add('hidden'); 
+                
+                if (elements.qrWins) elements.qrWins.innerText = sw;
+                if (elements.qrTrainer) elements.qrTrainer.innerText = gameState.trainerName || "PLAYER";
+                if (elements.qrRankInfo) elements.qrRankInfo.innerText = `RANK: ${getRankName(pts)} (${pts})`;
+                
+                // Timezone Display
+                const offset = -now.getTimezoneOffset() / 60;
+                const tzStr = `GMT${offset >= 0 ? '+' : ''}${offset}`;
+                const timeStr = now.toLocaleString('zh-CN', { hour12: false }) + ` (${tzStr})`;
+                if(elements.qrTimestamp) elements.qrTimestamp.innerText = `${timeStr}`;
+            } catch (e) {
+                console.error("UI Update Failed:", e);
+            }
+            
+            // 3. Payload Construction (JSON)
+            // v7 adds 'u' field for UID
+            const payloadObj = {
+                v: 7,
+                m: gameState.m,
+                d: gameState.d,
+                r: rMap[gameState.rarity],
+                w: sw,
+                p: pts,
+                n: (gameState.trainerName || "PLAYER").substring(0, 10),
+                t: timestamp,
+                u: gameState.uid // UID for secure self-check
+            };
+            const payloadStr = JSON.stringify(payloadObj);
+
+            // 4. QR Code Gen (Delayed)
+            setTimeout(() => {
+                try {
+                    if(elements.qrcodeContainer) {
+                        elements.qrcodeContainer.innerHTML = ""; 
+                        new QRCode(elements.qrcodeContainer, {
+                            text: payloadStr,
+                            width: 180, height: 180,
+                            colorDark : "#000000", colorLight : "#ffffff",
+                            correctLevel : QRCode.CorrectLevel.L
+                        });
+                    }
+                } catch(e) {
+                    if(elements.qrcodeContainer) elements.qrcodeContainer.innerText = "二维码生成失败";
+                }
+            }, 300);
+            
+            // Expire UI
+            setTimeout(() => {
+                if(!elements.viewQrShow.classList.contains('hidden')) {
+                    elements.qrExpireOverlay.classList.remove('hidden');
+                }
+            }, 10 * 60 * 1000);
+        }
+
+        // --- ERROR UI HANDLING ---
+        function showScanError(msg) {
+            elements.scanStatus.innerText = ""; // Clear "Scanning..." status
+            if(elements.scanErrorBox && elements.scanErrorText) {
+                elements.scanErrorText.innerText = msg;
+                elements.scanErrorBox.classList.remove('hidden');
+                if (navigator.vibrate) navigator.vibrate(200); // Haptic feedback
+            } else {
+                alert(msg); // Fallback
+            }
+        }
+
+        function clearScanError() {
+            if(elements.scanErrorBox) {
+                elements.scanErrorBox.classList.add('hidden');
+            }
+        }
+
+        // --- SCANNER LOGIC ---
+        function resetScannerUI() {
+            elements.btnCamStart.classList.remove('hidden');
+            elements.btnCamStop.classList.add('hidden');
+            elements.scanStatus.innerText = "";
+            elements.cameraPlaceholder.classList.remove('hidden');
+            if(elements.qrInputFile) elements.qrInputFile.value = ""; 
+            gameState.isProcessingScan = false; // Reset Lock
+        }
+
+        async function resetScanner() {
+            if (html5QrCode) {
+                try {
+                    if(html5QrCode.isScanning) {
+                        await html5QrCode.stop();
+                    }
+                    await html5QrCode.clear();
+                } catch(e) { console.log("Scanner cleanup:", e); }
+                html5QrCode = null;
+            }
+            // Small delay to prevent DOM thrashing
+            await new Promise(r => setTimeout(r, 50));
+            html5QrCode = new Html5Qrcode("reader");
+        }
+
+        async function startScanner() {
+            clearScanError(); 
+            gameState.isProcessingScan = false; // Ensure lock is clear
+            await resetScanner();
+            
+            elements.btnCamStart.classList.add('hidden');
+            elements.btnCamStop.classList.remove('hidden');
+            elements.scanStatus.innerText = "正在启动相机...";
+            elements.cameraPlaceholder.classList.add('hidden');
+            
+            // FIX: Removed formatsToSupport and useBarCodeDetectorIfSupported
+            // This prevents the "stuck on scanning" issue on Android devices
+            const config = { 
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            };
+
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                config, 
+                onScanSuccess
+            ).then(() => {
+                elements.scanStatus.innerText = "扫描中...";
+            }).catch(err => {
+                elements.scanStatus.innerText = "相机启动失败";
+                showScanError("相机启动失败，请检查权限");
+                resetScannerUI();
+            });
+        }
+
+        function stopScannerCameraOnly() {
+            try {
+                if (html5QrCode && html5QrCode.isScanning) {
+                    html5QrCode.stop().then(() => {
+                        html5QrCode.clear();
+                        resetScannerUI();
+                        elements.scanStatus.innerText = "相机已停止";
+                    }).catch(err => {
+                        console.warn("Stop failed", err);
+                        resetScannerUI();
+                    });
+                } else {
+                    resetScannerUI();
+                }
+            } catch(e) { resetScannerUI(); }
+        }
+
+        function fullStopScanner() {
+            stopScannerCameraOnly();
+            clearScanError();
+            switchView('viewPrep');
+        }
+
+        async function handleFileScan(e) {
+            if (e.target.files.length === 0) return;
+            
+            // UI Feedback
+            gameState.isProcessingScan = true; 
+            elements.scanStatus.innerText = "正在读取图片...";
+            clearScanError();
+            
+            const file = e.target.files[0];
+
+            try {
+                // 1. SAFE STOP LOGIC (The Fix)
+                if (html5QrCode) {
+                    try {
+                        // Only try to stop if specifically in scanning state
+                        if (html5QrCode.isScanning) {
+                           await html5QrCode.stop();
+                        }
+                    } catch(err) {
+                        // SWALLOW THE "NOT RUNNING" ERROR
+                        console.log("Stop skipped (already stopped):", err);
+                    }
+                    
+                    try {
+                        await html5QrCode.clear();
+                    } catch(err) {
+                        console.log("Clear skipped:", err);
+                    }
+                    html5QrCode = null;
+                }
+
+                // 2. Create fresh instance specifically for file scan
+                // Wait for DOM to stabilize
+                await new Promise(r => setTimeout(r, 100));
+                
+                const scanner = new Html5Qrcode("reader");
+                html5QrCode = scanner; // track it
+
+                // 3. Scan
+                const decodedText = await scanner.scanFile(file, true);
+                onScanSuccess(decodedText);
+
+            } catch(err) {
+                console.error("File Scan Error:", err);
+                gameState.isProcessingScan = false;
+                
+                // Better Error Handling
+                let msg = "无法识别二维码";
+                let strErr = err.toString();
+                if (strErr.includes("No QR code found") || strErr.includes("NotFound")) {
+                    msg = "未发现二维码。请尝试：\n1. 裁剪图片仅保留二维码\n2. 确保光线/对比度清晰";
+                }
+                
+                showScanError(msg);
+            }
+        }
+
+        function onScanSuccess(decodedText) {
+            // 1. LOCK CHECK
+            if(gameState.isProcessingScan && elements.scanStatus.innerText.includes("成功")) return;
+            
+            // 2. IMMEDIATE FEEDBACK
+            elements.scanStatus.innerText = "识别成功！正在进入战斗...";
+            clearScanError();
+            
+            // 3. ASYNC CLEANUP & TRANSITION
+            if (html5QrCode) {
+                try {
+                    html5QrCode.stop().catch(e => console.log("Stop error ignored", e));
+                } catch(e) {}
+            }
+
+            // Force timeout to ensure UI thread unblocks before heavy processing
+            setTimeout(() => {
+                processScannedData(decodedText);
+            }, 100); 
+        }
+
+        function processScannedData(decodedText) {
+            try {
+                let data = null;
+                try { data = JSON.parse(decodedText); } catch(e) {}
+
+                // --- v7/v6 Format (JSON) ---
+                if (data && (data.v === 6 || data.v === 7)) {
+                    const { m, d, r, w, p, n, t, u } = data;
+                    
+                    if (Math.abs(Date.now() - t) > 600000) {
+                        showScanError("❌ 二维码已失效 (超过10分钟)");
+                        resetScannerUI(); return;
+                    }
+
+                    if (u && gameState.uid && u === gameState.uid) {
+                        showScanError("❌ 无法挑战自己 (UID一致)！");
+                        resetScannerUI(); return;
+                    }
+
+                    const rMapInv = ["COMMON", "SR", "SSR"];
+                    const rarity = rMapInv[r] || "COMMON";
+                    const myName = (gameState.trainerName || "PLAYER").trim().toUpperCase();
+                    const targetName = (n || "PLAYER").trim().toUpperCase();
+                    
+                    if (myName === targetName && gameState.m === m && gameState.d === d && gameState.rarity === rarity) {
+                        showScanError("❌ 无法挑战自己 (属性一致)！");
+                        resetScannerUI(); return;
+                    }
+
+                    startBattleFromData(m, d, rarity, w, p, n);
+                } 
+                // --- Legacy ---
+                else if (typeof decodedText === 'string' && (decodedText.startsWith("5|") || decodedText.startsWith("4|"))) {
+                    showScanError("⚠️ 旧版本二维码不再支持");
+                    resetScannerUI();
+                }
+                else {
+                    showScanError("❌ 无效的 Catmon 二维码");
+                    resetScannerUI();
+                }
+            } catch (e) {
+                console.error(e);
+                showScanError("❌ 数据损坏");
+                resetScannerUI();
+            }
+        }
+
+        function startBattleFromData(m, d, rarity, wins, pts, name) {
+            try {
+                const seed = m * 31 + d;
+                const genData = generateCatData(seed, rarity);
+                const grownStats = getGrownStats(genData.baseStats, wins);
+                
+                const grade = CONFIG.naming.grades[rarity];
+                const monthWord = CONFIG.naming.months[m - 1];
+                const dayWord = CONFIG.naming.days[Math.min(30, d - 1)];
+                const nameCN = `${grade.cn}${monthWord.cn}${dayWord.cn}兽`;
+
+                // KEY FIX: Force clear scanner state and error messages
+                clearScanError();
+                elements.scanStatus.innerText = "";
+                gameState.isProcessingScan = false;
+                
+                // IMPORTANT: Ensure scanner instance is nulled so next time we get a fresh one
+                if(html5QrCode) {
+                    html5QrCode.clear();
+                    html5QrCode = null; 
+                }
+
+                initBattle({
+                    name: nameCN,
+                    trainer: name,
+                    stats: grownStats,
+                    dna: genData.dna,
+                    colors: genData.colors,
+                    rankPoints: pts
+                }, true);
+            } catch(e) {
+                console.error("Battle Start Error:", e);
+                showScanError("战斗初始化失败: " + e.message);
+                resetScannerUI();
+            }
+        }
+
+        // --- BATTLE ---
+        let battleState = { p: null, e: null, turn: 0, isRanked: false, isBoss: false };
+
+        function startRandomBattle() {
+            const rSeed = Math.floor(Math.random() * 10000);
+            const rRarity = Math.random() < 0.1 ? 'SSR' : (Math.random() < 0.4 ? 'SR' : 'COMMON');
+            const gen = generateCatData(rSeed, rRarity);
+            
+            const myPts = gameState.battleRecord.rankPoints || 0;
+            let rPts = Math.max(0, Math.min(100, myPts + Math.floor(Math.random() * 30) - 15));
+            const impliedWins = Math.floor(rPts / 2);
+            const rStats = getGrownStats(gen.baseStats, impliedWins);
+
+            // FIXED: Random battle isRanked = false
+            initBattle({
+                name: "野生 Catmon",
+                trainer: "WILD",
+                stats: rStats,
+                dna: gen.dna,
+                colors: gen.colors,
+                rankPoints: rPts
+            }, false); 
+        }
+
+        function initBattle(enemyInfo, isRanked, isBoss = false, bossId = null) {
+            const mySw = gameState.battleRecord.statWins || 0;
+            const myStats = getGrownStats(gameState.baseStats, mySw);
+            const myPts = gameState.battleRecord.rankPoints || 0;
+            
+            const grade = CONFIG.naming.grades[gameState.rarity];
+            const monthWord = CONFIG.naming.months[gameState.m - 1];
+            const dayWord = CONFIG.naming.days[Math.min(30, gameState.d - 1)];
+            const myName = `${grade.cn}${monthWord.cn}${dayWord.cn}兽`;
+
+            battleState = {
+                isRanked: isRanked,
+                isBoss: isBoss,
+                bossId: bossId,
+                p: { ...myStats, maxHp: myStats.hp, curHp: myStats.hp, name: myName, pts: myPts },
+                e: { ...enemyInfo.stats, maxHp: enemyInfo.stats.hp, curHp: enemyInfo.stats.hp, name: enemyInfo.name, pts: enemyInfo.rankPoints },
+                turn: 0
+            };
+
+            elements.playerSprite.innerHTML = renderCat(gameState.dna, gameState.colors, 96);
+            
+            // Check if special render function exists (World Boss)
+            if (enemyInfo.renderFunc) {
+                // FIXED: Smaller Size (80px) for Boss Avatar in Battle
+                elements.enemySprite.innerHTML = enemyInfo.renderFunc(80);
+            } else {
+                elements.enemySprite.innerHTML = renderCat(enemyInfo.dna, enemyInfo.colors, 96);
+            }
+            
+            elements.playerName.innerText = myName;
+            
+            elements.playerRank.innerText = `${getRankName(myPts)} (${myPts})`;
+            elements.enemyRank.innerText = isBoss ? `BOSS LEVEL ${enemyInfo.level}` : `${getRankName(enemyInfo.rankPoints)} (${enemyInfo.rankPoints})`;
+
+            elements.enemyName.innerText = enemyInfo.name;
+
+            elements.btnLeaveBattle.classList.add('hidden');
+            elements.battleLog.innerHTML = "";
+            updateHealthUI();
+            switchView('viewArena');
+            
+            const pTier = getRankTier(myPts);
+            
+            log("BATTLE START!");
+            if (isBoss) {
+                 log(`[WARNING] 遭遇世界BOSS: ${enemyInfo.name}`);
+            } else if(battleState.isRanked) {
+                const eTier = getRankTier(enemyInfo.rankPoints);
+                if(eTier < pTier) {
+                    log(`[INFO] 对手段位较低，胜利无收益`);
+                } else {
+                    log(`[INFO] 强敌挑战！胜利可获积分/属性`);
+                }
+            } else {
+                log(`[INFO] 练习赛 (无收益)`);
+            }
+            
+            setTimeout(nextTurn, 1000);
+        }
+
+        function nextTurn() {
+            if (battleState.p.curHp <= 0 || battleState.e.curHp <= 0) {
+                endBattle(); return;
+            }
+            const isPlayer = battleState.turn % 2 === 0;
+            const atk = isPlayer ? battleState.p : battleState.e;
+            const def = isPlayer ? battleState.e : battleState.p;
+            
+            const raw = atk.atk * (0.9 + Math.random() * 0.2);
+            const mit = def.def * 0.4; 
+            let dmg = Math.max(1, raw - mit);
+            if(Math.random() < 0.1) { dmg *= 1.5; log("CRITICAL HIT!"); }
+            
+            def.curHp -= dmg;
+            updateHealthUI();
+            log(`${atk.name} 造成 ${dmg.toFixed(1)} 伤害`);
+
+            const spriteAtk = isPlayer ? elements.playerSprite : elements.enemySprite;
+            const spriteDef = isPlayer ? elements.enemySprite : elements.playerSprite;
+            spriteAtk.classList.add(isPlayer ? 'anim-atk-p' : 'anim-atk-e');
+            setTimeout(() => spriteAtk.classList.remove(isPlayer ? 'anim-atk-p' : 'anim-atk-e'), 300);
+            
+            setTimeout(() => {
+                spriteDef.classList.add(isPlayer ? 'anim-hit-e' : 'anim-hit-p');
+                setTimeout(() => spriteDef.classList.remove(isPlayer ? 'anim-hit-e' : 'anim-hit-p'), 400);
+                battleState.turn++;
+                setTimeout(nextTurn, 1000);
+            }, 300);
+        }
+
+        function endBattle() {
+            const win = battleState.p.curHp > 0;
+            const msg = win ? "VICTORY!" : "DEFEAT...";
+            log(`--- ${msg} ---`);
+            
+            // --- BOSS MODULE HOOK ---
+            if (battleState.isBoss) {
+                 if (win) {
+                     log(`BOSS 已被击败！获取奖励...`);
+                     setTimeout(() => {
+                         showBossVictory(battleState.bossId);
+                     }, 1500);
+                 } else {
+                     elements.btnLeaveBattle.classList.remove('hidden');
+                 }
+                 return;
+            }
+            // ------------------------
+
+            if(battleState.isRanked && win) {
+                const pTier = getRankTier(battleState.p.pts);
+                const eTier = getRankTier(battleState.e.pts);
+                
+                if (eTier >= pTier) {
+                    const ptsGain = Math.floor(Math.random() * 3) + 1; 
+                    gameState.battleRecord.rankPoints = Math.min(100, (gameState.battleRecord.rankPoints || 0) + ptsGain);
+                    gameState.battleRecord.statWins = (gameState.battleRecord.statWins || 0) + 1;
+                    
+                    log(`实力认证！积分 +${ptsGain}`);
+                    log(`属性成长 +1%`);
+                    
+                    const newTier = getRankTier(gameState.battleRecord.rankPoints);
+                    if(newTier > pTier) {
+                        log(`晋升！段位提升至 [${getRankName(gameState.battleRecord.rankPoints)}]`);
+                    }
+                } else {
+                    log(`虐菜无情，由于对手段位过低`);
+                    log(`未获得积分与属性成长`);
+                }
+                gameState.battleRecord.wins++;
+                saveGameData();
+            } else if (battleState.isRanked && !win) {
+                gameState.battleRecord.losses++;
+                saveGameData();
+            }
+            elements.btnLeaveBattle.classList.remove('hidden');
+        }
+
+        // --- UTILS ---
+        function updateHealthUI() {
+            const pPct = Math.max(0, (battleState.p.curHp / battleState.p.maxHp) * 100);
+            const ePct = Math.max(0, (battleState.e.curHp / battleState.e.maxHp) * 100);
+            elements.playerHpBar.style.width = pPct + "%";
+            elements.playerHpBar.className = `hp-fill ${pPct>50?'bg-green-400':(pPct>20?'bg-yellow-400':'bg-red-500')}`;
+            elements.playerHpText.innerText = `${Math.ceil(Math.max(0,battleState.p.curHp))}/${battleState.p.maxHp}`;
+            elements.enemyHpBar.style.width = ePct + "%";
+            elements.enemyHpBar.className = `hp-fill ${ePct>50?'bg-green-400':(ePct>20?'bg-yellow-400':'bg-red-500')}`;
+        }
+        function log(msg) {
+            elements.battleLog.innerHTML += `<div>> ${msg}</div>`;
+            elements.battleLog.scrollTop = elements.battleLog.scrollHeight;
+        }
+
+        // --- GRAPHICS ---
+        function initSelects() {
+            const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+            elements.mIn.innerHTML = months.map((m, i) => `<option value="${i+1}">${m}</option>`).join('');
+            elements.dIn.innerHTML = Array.from({length: 31}, (_, i) => `<option value="${i+1}">${(i+1).toString().padStart(2, '0')}</option>`).join('');
+        }
+        function initBackgroundBubbles() {
+            for (let i = 0; i < 20; i++) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'cat-bubble';
+                const s = Math.floor(Math.random() * 10000);
+                const gen = generateCatData(s, 'COMMON');
+                wrapper.innerHTML = renderCat(gen.dna, gen.colors, 48);
+                wrapper.style.left = Math.random() * 100 + '%';
+                wrapper.style.animationDuration = `${10 + Math.random() * 20}s, ${2 + Math.random() * 3}s`;
+                wrapper.style.animationDelay = `${Math.random() * -20}s, 0s`;
+                elements.bg.appendChild(wrapper);
+            }
+        }
+        function renderCat(dna, colors, size) {
+            const { main, shadow, highlight, pattern } = colors;
+            const r = (x, y, w, h, f) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${f}"/>`;
+            const svgParts = [`<svg width="${size}" height="${size}" viewBox="-2 -2 20 20">`];
+            CONFIG.pixelData.tails[dna.tail].p.forEach(b => svgParts.push(r(b[0], b[1], b[2], b[3], main)));
+            svgParts.push(r(4, 8, 8, 6, main)); svgParts.push(r(4, 13, 8, 1, shadow)); svgParts.push(r(4, 12, 2, 2, shadow));
+            svgParts.push(r(10, 12, 2, 2, shadow)); svgParts.push(r(6, 12, 1, 2, main)); svgParts.push(r(9, 12, 1, 2, main));
+            svgParts.push(r(3, 3, 10, 6, main)); svgParts.push(r(4, 4, 8, 4, highlight)); svgParts.push(r(6, 9, 4, 4, highlight));
+            CONFIG.pixelData.patterns[dna.pattern].belly.forEach(b => svgParts.push(r(b[0], b[1], b[2], b[3], pattern)));
+            CONFIG.pixelData.patterns[dna.pattern].head.forEach(b => svgParts.push(r(b[0], b[1], b[2], b[3], pattern)));
+            CONFIG.pixelData.ears[dna.ear].p.forEach(b => svgParts.push(r(b[0], b[1], b[2], b[3], main)));
+            CONFIG.pixelData.eyes[dna.eye].p.forEach(b => svgParts.push(r(b[0], b[1], b[2], b[3], '#222')));
+            svgParts.push(r(7, 7, 2, 1, "#ffaaaa")); svgParts.push('</svg>');
+            return svgParts.join('');
+        }
+        function getZodiac(m, d) {
+             const z = ["摩羯", "水瓶", "双鱼", "白羊", "金牛", "双子", "巨蟹", "狮子", "处女", "天秤", "天蝎", "射手", "摩羯"];
+             const last = [19, 18, 20, 19, 20, 21, 22, 22, 22, 23, 22, 21];
+             return d > last[m-1] ? z[m] : z[m-1];
+        }
+        function drawEgg(c) { return `<svg width="64" height="64" viewBox="0 0 16 16"><rect x="5" y="2" width="6" height="12" fill="#FFF"/><rect x="4" y="3" width="8" height="10" fill="#FFF"/><rect x="3" y="5" width="10" height="6" fill="#FFF"/><rect x="4" y="5" width="8" height="1" fill="${c}" opacity="0.6"/><rect x="3" y="8" width="10" height="1" fill="${c}" opacity="0.6"/><rect x="5" y="11" width="6" height="1" fill="${c}" opacity="0.6"/><rect x="10" y="3" width="1" height="10" fill="#DDD" opacity="0.4"/></svg>`; }
+        function gameLoop(time) {
+            if(!gameState.active || document.getElementById('view-game').classList.contains('hidden')) return;
+            if(!gameState.lastTime) gameState.lastTime = time;
+            const dt = time - gameState.lastTime; gameState.lastTime = time;
+            gameState.ptr += gameState.dir * 0.12 * dt;
+            if(gameState.ptr >= 100) { gameState.ptr = 100; gameState.dir = -1; }
+            if(gameState.ptr <= 0) { gameState.ptr = 0; gameState.dir = 1; }
+            elements.ptr.style.left = gameState.ptr + "%";
+            gameState.prog += dt * 0.003; 
+            const p = Math.min(100, Math.floor(gameState.prog));
+            elements.progText.innerText = p + "%";
+            elements.progBar.style.width = p + "%";
+            elements.eggWrapper.className = gameState.prog > 80 ? "inline-block anim-shake" : "inline-block";
+            if(gameState.prog >= 100) finishGame();
+            else requestAnimationFrame(gameLoop);
+        }
+        function doStrike() {
+            if(!gameState.active) return;
+            const isHit = gameState.ptr >= 35 && gameState.ptr <= 65;
+            if(isHit) {
+                gameState.prog += 8; elements.lcd.style.backgroundColor = "#b8ffb8"; elements.gameMsg.innerText = "HIT!"; elements.gameMsg.style.color = "green";
+            } else {
+                gameState.prog = Math.max(0, gameState.prog - 5); elements.lcd.style.backgroundColor = "#ffb8b8"; elements.gameMsg.innerText = "MISS"; elements.gameMsg.style.color = "red";
+            }
+            setTimeout(() => { elements.lcd.style.backgroundColor = "var(--lcd-bg)"; elements.gameMsg.style.color = "black"; }, 100);
+        }
+        function resetGame() {
+            // 1. Clear Storage
+            localStorage.removeItem(SAVE_KEY);
+            
+            // 2. Reset Game State (preserving audio setting)
+            const currentMute = gameState.isMuted;
+            gameState = {
+                active: false, m: 1, d: 1, seed: 0, rarity: 'COMMON', uid: '',
+                baseStats: { hp: 100, atk: 20, def: 10, spd: 10 }, 
+                trainerName: "", nameLocked: false, 
+                battleRecord: { wins: 0, losses: 0, rankPoints: 0, statWins: 0 },
+                isMuted: currentMute, 
+                dna: {}, colors: {},
+                prog: 0, ptr: 0, dir: 1, lastTime: 0,
+                bossCleared: []
+            };
+
+            // 3. Reset UI Inputs
+            elements.mIn.selectedIndex = 0;
+            elements.dIn.selectedIndex = 0;
+            elements.inputTrainer.value = "";
+            elements.inputTrainer.disabled = false;
+            elements.btnConfirmName.style.display = 'block';
+            elements.nameStatusIcon.classList.add('hidden');
+            
+            // 4. Reset Button States in Init View
+            elements.btnMainBattle.classList.remove('btn-green');
+            elements.btnMainBattle.classList.add('btn-gray');
+            elements.btnMainBattle.innerText = "CATMON BATTLE";
+            elements.mainStatusText.innerText = "请先孵化精灵";
+            
+            // 5. Navigate
+            switchView('viewInit');
+        }
+        function toggleMusic() { gameState.isMuted = !gameState.isMuted; elements.bgm.muted = gameState.isMuted; }
+        function tryPlayMusic() { if (elements.bgm.paused && !gameState.isMuted) elements.bgm.play().catch(()=>{}); }
+
+        // ==========================================
+        //        WORLD BOSS MODULE (NEW)
+        // ==========================================
+        
+        let BOSS_DATA = [];
+
+        function initBossModule() {
+            // 1. Helper function to render REAL TWITTER AVATAR
+            const renderRealAvatar = (handle, size, rarity) => `
+                <div class="boss-victory-avatar ${rarity}" style="width:${size}px; height:${size}px;">
+                    <img src="https://unavatar.io/twitter/${handle}" 
+                         onerror="this.src='https://ui-avatars.com/api/?name=${handle}&background=random'"
+                         class="w-full h-full object-cover" 
+                         alt="${handle}">
+                </div>
+            `;
+
+            // 2. Define Data
+            BOSS_DATA = [
+                { id: 'trends', name: 'Trends', handle: 'trendsdotfun', level: 3, m: 6, d: 9, rarity: 'Golden', hp: 154, atk: 35, def: 15 }, 
+                { id: 'jov', name: 'Jov', handle: 'jove_BAD', level: 4, m: 8, d: 18, rarity: 'Common', hp: 176, atk: 45, def: 20 },
+                { id: 'leek', name: '韭菜眼镜', handle: '0x7ohnson', level: 4, m: 1, d: 20, rarity: 'EPIC', hp: 198, atk: 50, def: 22 },
+                { id: 'mia', name: '凡喵', handle: 'miaobsc', level: 4, m: 1, d: 13, rarity: 'Golden', hp: 210, atk: 55, def: 25 },
+                { id: 'molt', name: 'Moltbook', handle: 'moltbook', level: 5, m: 1, d: 29, rarity: 'Golden', hp: 242, atk: 65, def: 28 },
+                { id: 'justin', name: 'Justin', handle: 'justinsuntron', level: 6, m: 4, d: 1, rarity: 'EPIC', hp: 286, atk: 75, def: 30 },
+                { id: 'toly', name: 'Toly', handle: 'toly', level: 7, m: 3, d: 16, rarity: 'EPIC', hp: 330, atk: 90, def: 35 },
+                { id: 'star', name: 'Star', handle: 'Star_OKX', level: 8, m: 10, d: 24, rarity: 'EPIC', hp: 396, atk: 110, def: 40 },
+                { id: 'cz', name: 'CZ', handle: 'cz_binance', level: 9, m: 11, d: 1, rarity: 'Golden', hp: 462, atk: 130, def: 50 },
+                { id: 'elon', name: 'Elon', handle: 'elonmusk', level: 10, m: 6, d: 28, rarity: 'Golden', hp: 550, atk: 150, def: 60 },
+                
+                // DEBUG BOSS
+                { id: 'debug', name: 'Debug Slime', handle: 'github', level: 1, m: 1, d: 1, rarity: 'Common', hp: 50, atk: 5, def: 0 }
+            ];
+
+            // Assign render function
+            BOSS_DATA.forEach(boss => {
+                boss.render = (size) => renderRealAvatar(boss.handle, size, boss.rarity);
+            });
+
+            // 3. UI Setup
+            setupBossUI();
+        }
+
+        function setupBossUI() {
+            // Note: Elements viewBossDex and viewBossVictory are already in 'elements' object
+            const btnBoss = document.getElementById('btn-world-boss');
+            
+            btnBoss.addEventListener('click', () => {
+                switchView('viewBossDex');
+                renderBossList();
+                initBossSelects();
+            });
+
+            document.getElementById('btn-boss-back').addEventListener('click', () => switchView('viewPrep'));
+            document.getElementById('btn-boss-summon').addEventListener('click', trySummonBoss);
+            
+            document.getElementById('btn-boss-claim').addEventListener('click', () => {
+                switchView('viewPrep');
+                updateStatsUI();
+            });
+        }
+
+        function initBossSelects() {
+            const mSel = document.getElementById('boss-m-in');
+            const dSel = document.getElementById('boss-d-in');
+            if(mSel.options.length === 0) {
+                mSel.innerHTML = elements.mIn.innerHTML;
+                dSel.innerHTML = elements.dIn.innerHTML;
+            }
+            document.getElementById('boss-signal-status').innerText = "NO SIGNAL";
+            document.getElementById('boss-signal-status').className = "text-center text-[10px] font-mono mt-1 h-4 text-red-500 font-bold";
+        }
+
+        function renderBossList() {
+            const container = document.getElementById('boss-list-container');
+            container.innerHTML = "";
+            
+            BOSS_DATA.forEach(boss => {
+                const div = document.createElement('div');
+                const isCleared = (gameState.bossCleared || []).includes(boss.id);
+                div.className = `boss-card-item border-${boss.rarity} ${isCleared ? 'cleared' : ''}`;
+                
+                let nameColor = 'text-gray-300';
+                if(boss.rarity === 'Golden') nameColor = 'text-yellow-400';
+                if(boss.rarity === 'EPIC') nameColor = 'text-purple-400';
+
+                div.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-full overflow-hidden border border-white">
+                            <img src="https://unavatar.io/twitter/${boss.handle}" class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-[10px] font-black ${nameColor}">${boss.name}</span>
+                            <span class="text-[8px] text-gray-400">LV.${boss.level} | ${boss.m}/${boss.d}</span>
+                        </div>
+                    </div>
+                    <div class="text-[8px] font-bold ${isCleared ? 'text-green-400' : 'text-red-400'}">
+                        ${isCleared ? 'CLEARED' : 'ALIVE'}
+                    </div>
+                `;
+                
+                div.addEventListener('click', () => {
+                     document.getElementById('boss-m-in').value = boss.m;
+                     document.getElementById('boss-d-in').value = boss.d;
+                     if(navigator.vibrate) navigator.vibrate(10);
+                });
+                
+                container.appendChild(div);
+            });
+        }
+
+        function trySummonBoss() {
+            const m = parseInt(document.getElementById('boss-m-in').value);
+            const d = parseInt(document.getElementById('boss-d-in').value);
+            const statusEl = document.getElementById('boss-signal-status');
+            
+            statusEl.innerText = "CONNECTING...";
+            statusEl.className = "text-center text-[10px] font-mono mt-1 h-4 text-yellow-400 font-bold animate-pulse";
+            
+            setTimeout(() => {
+                const boss = BOSS_DATA.find(b => b.m === m && b.d === d);
+                
+                if (boss) {
+                    statusEl.innerText = "SIGNAL LOCKED!";
+                    statusEl.className = "text-center text-[10px] font-mono mt-1 h-4 text-green-400 font-bold";
+                    
+                    setTimeout(() => {
+                        startBossBattle(boss);
+                    }, 500);
+                } else {
+                    statusEl.innerText = "NO SIGNAL";
+                    statusEl.className = "text-center text-[10px] font-mono mt-1 h-4 text-red-500 font-bold";
+                    if(navigator.vibrate) navigator.vibrate([50, 50, 50]);
+                }
+            }, 600);
+        }
+
+        function startBossBattle(boss) {
+            // FIXED: Check if already cleared
+            if (gameState.bossCleared && gameState.bossCleared.includes(boss.id)) {
+                showBossVictory(boss.id);
+                return;
+            }
+
+            const enemyInfo = {
+                name: boss.name,
+                level: boss.level,
+                rankPoints: 9999, 
+                stats: { hp: boss.hp, atk: boss.atk, def: boss.def, spd: 10 },
+                renderFunc: boss.render,
+                dna: {},
+                colors: {}
+            };
+            
+            initBattle(enemyInfo, false, true, boss.id);
+        }
+
+        function showBossVictory(bossId) {
+            try {
+                const boss = BOSS_DATA.find(b => b.id === bossId);
+                if (!boss) { console.error("Boss data not found!"); return; }
+
+                // 1. Data Population
+                // FIXED: Debug Boss reward is 0
+                const reward = boss.id === 'debug' ? 0 : 10000 * boss.level;
+                
+                document.getElementById('boss-victory-reward').innerText = `$${reward.toLocaleString()} Catmon`;
+                document.getElementById('boss-victory-name').innerText = `${boss.name} BADGE`;
+                document.getElementById('boss-victory-player').innerText = (gameState.trainerName || "PLAYER").toUpperCase();
+                document.getElementById('boss-victory-time').innerText = new Date().toLocaleString('zh-CN', { hour12: false });
+                
+                // 2. Avatar Render
+                document.getElementById('boss-victory-avatar-container').innerHTML = boss.render(128);
+                
+                // 3. Theme Update
+                const modal = document.getElementById('boss-victory-modal');
+                modal.className = `victory-modal-container theme-${boss.rarity}`;
+
+                // 4. Mark Cleared
+                if (!gameState.bossCleared) gameState.bossCleared = [];
+                if (!gameState.bossCleared.includes(bossId)) {
+                    gameState.bossCleared.push(bossId);
+                    saveGameData();
+                }
+
+                // 5. Switch View (Use direct method to prevent any index issues)
+                // Hide Arena
+                elements.viewArena.classList.add('hidden');
+                elements.viewBossDex.classList.add('hidden'); // Also hide dex if jumping directly
+                // Show Victory Modal
+                elements.viewBossVictory.classList.remove('hidden');
+                
+            } catch(e) {
+                console.error("Victory Screen Error:", e);
+                // Fallback exit
+                elements.btnLeaveBattle.classList.remove('hidden');
+            }
+        }
+
+    </script>
+</body>
+</html>
+
+
