@@ -353,19 +353,6 @@
 </head>
 <body>
     
-    <!-- Audio -->
-    <audio id="bgm" loop preload="none">
-        <source src="https://assets.mixkit.co/music/preview/mixkit-game-level-music-689.mp3" type="audio/mpeg">
-    </audio>
-
-    <!-- Music Toggle -->
-    <div id="music-toggle" class="fixed top-5 right-5 z-50 bg-black/50 border-2 border-gray-600 rounded-full w-11 h-11 flex items-center justify-center cursor-pointer hover:bg-gray-800 transition-colors">
-        <svg id="music-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
-            <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
-            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-        </svg>
-    </div>
-
     <div id="bg-bubbles"></div>
     <div id="flash-fx" class="fixed inset-0 bg-white z-[999] pointer-events-none opacity-0 transition-opacity duration-700"></div>
 
@@ -687,7 +674,6 @@
             viewQrShow: document.getElementById('view-qr-show'),
             viewQrScan: document.getElementById('view-qr-scan'),
             viewArena: document.getElementById('view-arena'),
-            // ADDED EXPLICITLY HERE TO PREVENT UNDEFINED ERRORS
             viewBossDex: document.getElementById('view-boss-dex'),
             viewBossVictory: document.getElementById('view-boss-victory'),
             
@@ -759,9 +745,6 @@
             enemyRank: document.getElementById('enemy-rank'),
             battleLog: document.getElementById('battle-log'),
             btnLeaveBattle: document.getElementById('btn-leave-battle'),
-            bgm: document.getElementById('bgm'),
-            musicToggle: document.getElementById('music-toggle'),
-            musicIcon: document.getElementById('music-icon'),
             qrExpireOverlay: document.getElementById('qr-expire-overlay')
         };
 
@@ -770,7 +753,6 @@
             baseStats: { hp: 100, atk: 20, def: 10, spd: 10 }, 
             trainerName: "", nameLocked: false, 
             battleRecord: { wins: 0, losses: 0, rankPoints: 0, statWins: 0 },
-            isMuted: false, 
             dna: {}, colors: {},
             prog: 0, ptr: 0, dir: 1, lastTime: 0,
             isProcessingScan: false,
@@ -789,10 +771,9 @@
         });
 
         function bindEvents() {
-            elements.btnInitialize.addEventListener('click', () => { tryPlayMusic(); startGame(); });
+            elements.btnInitialize.addEventListener('click', () => { startGame(); });
             
             elements.btnMainBattle.addEventListener('click', () => {
-                tryPlayMusic();
                 const loaded = loadGameData();
                 if (loaded && (gameState.active || gameState.nameLocked)) {
                     deriveVisuals();
@@ -808,7 +789,6 @@
             
             elements.btnSync.addEventListener('pointerdown', (e) => { e.preventDefault(); doStrike(); });
             elements.btnRestart.addEventListener('click', resetGame);
-            elements.musicToggle.addEventListener('click', toggleMusic);
             
             elements.btnGotoPrep.addEventListener('click', () => {
                 updateStatsUI();
@@ -1658,14 +1638,12 @@
             // 1. Clear Storage
             localStorage.removeItem(SAVE_KEY);
             
-            // 2. Reset Game State (preserving audio setting)
-            const currentMute = gameState.isMuted;
+            // 2. Reset Game State
             gameState = {
                 active: false, m: 1, d: 1, seed: 0, rarity: 'COMMON', uid: '',
                 baseStats: { hp: 100, atk: 20, def: 10, spd: 10 }, 
                 trainerName: "", nameLocked: false, 
                 battleRecord: { wins: 0, losses: 0, rankPoints: 0, statWins: 0 },
-                isMuted: currentMute, 
                 dna: {}, colors: {},
                 prog: 0, ptr: 0, dir: 1, lastTime: 0,
                 bossCleared: []
@@ -1688,8 +1666,6 @@
             // 5. Navigate
             switchView('viewInit');
         }
-        function toggleMusic() { gameState.isMuted = !gameState.isMuted; elements.bgm.muted = gameState.isMuted; }
-        function tryPlayMusic() { if (elements.bgm.paused && !gameState.isMuted) elements.bgm.play().catch(()=>{}); }
 
         // ==========================================
         //        WORLD BOSS MODULE (NEW)
