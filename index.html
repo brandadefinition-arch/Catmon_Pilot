@@ -514,7 +514,7 @@
                 
                 <div class="mt-4 pt-4 border-t-2 border-gray-200 text-black font-mono text-[10px] flex flex-col gap-1 items-center bg-gray-100 rounded p-2">
                     <p class="font-bold text-xs" id="qr-timestamp">--</p>
-                    <p class="text-[9px] text-red-500 font-bold animate-pulse">有效时间: 10 分钟</p>
+                    <p class="text-[9px] text-red-500 font-bold animate-pulse">有效时间: 30 分钟</p>
                     <p class="font-bold text-sm text-purple-600" id="qr-rank-info">RANK: ???</p>
                     <p class="font-bold text-xs text-gray-600 mt-1">WINS: <span id="qr-wins">0</span></p>
                     <p class="font-bold text-xs bg-black text-white inline-block px-3 py-1 rounded mt-1" id="qr-trainer">TRAINER</p>
@@ -664,7 +664,7 @@
         
         const CONFIG = {
             naming: {
-                grades: { SSR: { en: "Gold", cn: "黄金" }, SR:  { en: "Mystic", cn: "秘法" }, COMMON: { en: "Wild", cn: "原生" } },
+                grades: { SSR: { en: "Gold", cn: "黄金" }, SR:  { en: "Mystic", cn: "稀有" }, COMMON: { en: "Wild", cn: "原生" } },
                 months: [ { en: "Frost", cn: "霜" }, { en: "Mist", cn: "雾" }, { en: "Leaf", cn: "叶" }, { en: "Bloom", cn: "花" }, { en: "Thunder", cn: "雷" }, { en: "Aqua", cn: "水" }, { en: "Flame", cn: "炎" }, { en: "Sun", cn: "日" }, { en: "Earth", cn: "岩" }, { en: "Wind", cn: "风" }, { en: "Shadow", cn: "影" }, { en: "Snow", cn: "雪" } ],
                 days: [ { en: "Claw", cn: "爪" }, { en: "Fang", cn: "牙" }, { en: "Wing", cn: "翼" }, { en: "Tail", cn: "尾" }, { en: "Eye", cn: "瞳" }, { en: "Shell", cn: "甲" }, { en: "Horn", cn: "角" }, { en: "Scale", cn: "鳞" }, { en: "Fin", cn: "鳍" }, { en: "Beak", cn: "喙" }, { en: "Paw", cn: "掌" }, { en: "Fur", cn: "毛" }, { en: "Bone", cn: "骨" }, { en: "Heart", cn: "心" }, { en: "Soul", cn: "魂" }, { en: "Spirit", cn: "灵" }, { en: "Mind", cn: "念" }, { en: "Dream", cn: "梦" }, { en: "Star", cn: "星" }, { en: "Moon", cn: "月" }, { en: "Rune", cn: "纹" }, { en: "Glyph", cn: "印" }, { en: "Orb", cn: "珠" }, { en: "Gem", cn: "玉" }, { en: "Crystal", cn: "晶" }, { en: "Dust", cn: "尘" }, { en: "Ash", cn: "灰" }, { en: "Spark", cn: "火" }, { en: "Wave", cn: "波" }, { en: "Pulse", cn: "脉" }, { en: "Nova", cn: "爆" } ]
             },
@@ -1109,12 +1109,12 @@
                 }
             }, 300);
             
-            // Expire UI
+            // Expire UI (Changed to 30 mins)
             setTimeout(() => {
                 if(!elements.viewQrShow.classList.contains('hidden')) {
                     elements.qrExpireOverlay.classList.remove('hidden');
                 }
-            }, 10 * 60 * 1000);
+            }, 30 * 60 * 1000);
         }
 
         // --- ERROR UI HANDLING ---
@@ -1301,8 +1301,9 @@
                 if (data && (data.v === 6 || data.v === 7)) {
                     const { m, d, r, w, p, n, t, u } = data;
                     
-                    if (Math.abs(Date.now() - t) > 600000) {
-                        showScanError("❌ 二维码已失效 (超过10分钟)");
+                    // CHANGED: 30 minutes check (30 * 60 * 1000 = 1800000)
+                    if (Math.abs(Date.now() - t) > 1800000) {
+                        showScanError("❌ 二维码已失效 (超过30分钟)");
                         resetScannerUI(); return;
                     }
 
