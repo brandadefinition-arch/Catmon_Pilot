@@ -80,7 +80,7 @@
         .btn-red { background: #ef4444; border-bottom-color: #b91c1c; color: #fff; }
         .btn-gold { background: #ffd700; border-bottom-color: #b8860b; color: #000; }
         
-        /* Highlighted World Boss Button (UPDATED) */
+        /* Highlighted World Boss Button */
         .btn-boss-glow {
             background: linear-gradient(135deg, #ff0000 0%, #ff8c00 100%);
             border-bottom: 6px solid #8b0000;
@@ -263,7 +263,7 @@
 
         /* Victory Modal Large Avatar */
         .boss-victory-avatar {
-            width: 140px; height: 140px; 
+            width: 100px; height: 100px; /* Compact */
             border-radius: 20px; 
             overflow: hidden; 
             background: #000;
@@ -272,7 +272,7 @@
             margin: 0 auto;
         }
 
-        /* VICTORY MODAL STYLES */
+        /* VICTORY MODAL STYLES (COMPACT) */
         .victory-modal-container {
             width: 320px;
             max-width: 95vw;
@@ -283,7 +283,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 24px;
+            padding: 16px; /* Reduced padding */
             color: white;
             position: relative;
             animation: modalPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -293,8 +293,8 @@
         .victory-title {
             font-family: 'Press Start 2P';
             color: var(--theme-text);
-            font-size: 14px;
-            margin-bottom: 24px;
+            font-size: 12px;
+            margin-bottom: 12px;
             text-shadow: 2px 2px 0px #000;
             letter-spacing: 1px;
             text-align: center;
@@ -304,8 +304,8 @@
             font-family: 'Noto Sans SC';
             font-weight: 900;
             font-style: italic;
-            font-size: 24px;
-            margin-top: 20px;
+            font-size: 20px;
+            margin-top: 10px;
             color: #fff;
             text-transform: uppercase;
             text-align: center;
@@ -314,10 +314,10 @@
 
         .victory-subtitle {
             color: #666;
-            font-size: 9px;
+            font-size: 8px;
             font-weight: bold;
             letter-spacing: 1px;
-            margin-bottom: 24px;
+            margin-bottom: 12px;
             text-transform: uppercase;
             text-align: center;
         }
@@ -327,14 +327,14 @@
             background: #111;
             border: 1px solid #333;
             border-radius: 6px;
-            padding: 12px;
-            margin-bottom: 10px;
+            padding: 8px;
+            margin-bottom: 6px;
             text-align: center;
         }
 
         .victory-btn {
             width: 100%;
-            padding: 16px;
+            padding: 12px;
             background: var(--theme-color);
             color: #000;
             font-family: 'Press Start 2P';
@@ -344,7 +344,7 @@
             cursor: pointer;
             box-shadow: 0 0 20px var(--theme-glow);
             transition: all 0.2s;
-            margin-top: 10px;
+            margin-top: 8px;
             font-weight: bold;
         }
         .victory-btn:active { transform: translateY(2px); }
@@ -601,8 +601,8 @@
             </div>
         </div>
 
-        <!-- 9. Boss Victory View (Redesigned) -->
-        <div id="view-boss-victory" class="hidden flex flex-col items-center justify-center min-h-screen fixed inset-0 bg-black/90 z-[100]">
+        <!-- 9. Boss Victory View (Redesigned & Compact) -->
+        <div id="view-boss-victory" class="hidden flex flex-col items-center justify-start pt-16 min-h-screen fixed inset-0 bg-black/90 z-[100]">
             <!-- Modal Container (Dynamically updated class for border color) -->
             <div id="boss-victory-modal" class="victory-modal-container theme-Golden">
                 
@@ -674,6 +674,7 @@
             viewQrShow: document.getElementById('view-qr-show'),
             viewQrScan: document.getElementById('view-qr-scan'),
             viewArena: document.getElementById('view-arena'),
+            // ADDED EXPLICITLY HERE TO PREVENT UNDEFINED ERRORS
             viewBossDex: document.getElementById('view-boss-dex'),
             viewBossVictory: document.getElementById('view-boss-victory'),
             
@@ -1089,7 +1090,7 @@
                 }
             }, 300);
             
-            // Expire UI (Changed to 30 mins)
+            // Expire UI (30 mins as requested)
             setTimeout(() => {
                 if(!elements.viewQrShow.classList.contains('hidden')) {
                     elements.qrExpireOverlay.classList.remove('hidden');
@@ -1281,7 +1282,7 @@
                 if (data && (data.v === 6 || data.v === 7)) {
                     const { m, d, r, w, p, n, t, u } = data;
                     
-                    // CHANGED: 30 minutes check (30 * 60 * 1000 = 1800000)
+                    // 30 Minutes Check (1800000ms)
                     if (Math.abs(Date.now() - t) > 1800000) {
                         showScanError("❌ 二维码已失效 (超过30分钟)");
                         resetScannerUI(); return;
@@ -1839,7 +1840,8 @@
                 document.getElementById('boss-victory-time').innerText = new Date().toLocaleString('zh-CN', { hour12: false });
                 
                 // 2. Avatar Render
-                document.getElementById('boss-victory-avatar-container').innerHTML = boss.render(128);
+                // UPDATED: Use smaller size (100)
+                document.getElementById('boss-victory-avatar-container').innerHTML = boss.render(100);
                 
                 // 3. Theme Update
                 const modal = document.getElementById('boss-victory-modal');
