@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Birthday Catmon: Social Legends</title>
+    <title>Birthday Catmon: Social Legends (V6.3 Combat Plus)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+SC:wght@400;900&display=swap" rel="stylesheet">
     <!-- QR Code Libraries -->
@@ -200,22 +200,42 @@
             font-size: 9px; font-weight: bold; margin-right: 5px; display: inline-block;
         }
 
-        /* Animations */
+        /* NEW BATTLE ANIMATIONS (OPTIMIZATION C) */
         @keyframes attack-fwd { 0% { transform: scale(1.6) scaleX(-1) translateX(0); } 50% { transform: scale(1.6) scaleX(-1) translateX(-30px); } 100% { transform: scale(1.6) scaleX(-1) translateX(0); } }
-        /* Adjusted attack animation for Enemy to respect scaling */
         @keyframes attack-enemy { 0% { transform: scale(1.4) translateX(0); } 50% { transform: scale(1.4) translateX(-30px); } 100% { transform: scale(1.4) translateX(0); } }
-        /* Boss attack animation (no scale) */
         @keyframes attack-boss { 0% { transform: translateX(0); } 50% { transform: translateX(-30px); } 100% { transform: translateX(0); } }
         
+        /* Hit Shake */
         @keyframes hit-shake { 0%, 100% { transform: translate(0, 0) scale(1.4); } 25% { transform: translate(-5px, 5px) scale(1.4); filter: brightness(5) sepia(1) hue-rotate(-50deg) saturate(5); } 75% { transform: translate(5px, -5px) scale(1.4); } }
         @keyframes hit-shake-boss { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-5px, 5px) rotate(5deg); filter: brightness(2) sepia(1) saturate(5); } 75% { transform: translate(5px, -5px) rotate(-5deg); } }
         
+        /* Crit Shake (Stronger) */
+        @keyframes crit-shake { 0%, 100% { transform: translate(0, 0) scale(1.5); } 20% { transform: translate(-10px, 10px) scale(1.5); filter: contrast(2) brightness(2) drop-shadow(0 0 10px red); } 40% { transform: translate(10px, -10px) scale(1.5); } 60% { transform: translate(-5px, 5px) scale(1.5); } 80% { transform: translate(5px, -5px) scale(1.5); } }
+
+        /* Counter Shake (Flash White) */
+        @keyframes counter-flash { 0% { filter: brightness(1); } 50% { filter: brightness(3) sepia(1) hue-rotate(200deg); } 100% { filter: brightness(1); } }
+
+        /* Dodge Animation */
+        @keyframes dodge-p { 0% { transform: scale(1.6) scaleX(-1) translateX(0); opacity: 1; } 30% { transform: scale(1.6) scaleX(-1) translateX(20px); opacity: 0.5; } 60% { transform: scale(1.6) scaleX(-1) translateX(0); opacity: 1; } }
+        @keyframes dodge-e { 0% { transform: scale(1.4) translateX(0); opacity: 1; } 30% { transform: scale(1.4) translateX(20px); opacity: 0.5; } 60% { transform: scale(1.4) translateX(0); opacity: 1; } }
+        @keyframes dodge-boss { 0% { transform: translateX(0); opacity: 1; } 30% { transform: translateX(20px); opacity: 0.5; } 60% { transform: translateX(0); opacity: 1; } }
+
         .anim-atk-p { animation: attack-fwd 0.3s ease-in-out; }
         .anim-atk-e { animation: attack-enemy 0.3s ease-in-out; }
         .anim-atk-boss { animation: attack-boss 0.3s ease-in-out; }
+        
         .anim-hit-e { animation: hit-shake 0.4s; }
         .anim-hit-boss { animation: hit-shake-boss 0.4s; }
         .anim-hit-p { animation: hit-shake 0.4s reverse; }
+        
+        .anim-crit-e { animation: crit-shake 0.5s; }
+        .anim-crit-p { animation: crit-shake 0.5s reverse; }
+        
+        .anim-counter { animation: counter-flash 0.4s; }
+
+        .anim-dodge-p { animation: dodge-p 0.5s ease-out; }
+        .anim-dodge-e { animation: dodge-e 0.5s ease-out; }
+        .anim-dodge-boss { animation: dodge-boss 0.5s ease-out; }
 
         .hidden { display: none !important; }
         
@@ -907,6 +927,7 @@
             if(viewName === 'viewCard') renderCardDetails();
         }
 
+        // OPTIMIZATION B: Stat Normalization
         function generateCatData(seed, rarity) {
             const dna = { ear: seed % 3, eye: (seed+2)%3, tail: (seed+5)%3, pattern: (seed+7)%3 };
             const hue = (seed * 137) % 360;
@@ -919,11 +940,30 @@
             if (rarity === 'SR') mult = 1.05;
             if (rarity === 'SSR') mult = 1.10;
             
+            // Raw Stats
+            let hp = 100 + (seed % 60);
+            let atk = 20 + (seed % 15);
+            let def = 10 + (seed % 10);
+            let spd = 10 + ((seed * 3) % 15);
+
+            // OPTIMIZATION B: Species Strength (种族值平衡)
+            // If total stats are too low, add bonus to lowest stats to ensure viability
+            const total = hp + atk + def + spd;
+            // Target Baseline ~155 (Average of ranges)
+            // If very unlucky (e.g., total < 150), give bonus points
+            if (total < 150) {
+                const bonus = 150 - total;
+                // Distribute bonus deterministicly
+                if (seed % 2 === 0) atk += Math.floor(bonus * 0.6);
+                else spd += Math.floor(bonus * 0.6);
+                hp += Math.ceil(bonus * 0.4);
+            }
+
             const baseStats = {
-                hp: Math.floor((100 + (seed % 60)) * mult),
-                atk: Math.floor((20 + (seed % 15)) * mult),
-                def: Math.floor((10 + (seed % 10)) * mult),
-                spd: Math.floor((10 + ((seed * 3) % 15)) * mult)
+                hp: Math.floor(hp * mult),
+                atk: Math.floor(atk * mult),
+                def: Math.floor(def * mult),
+                spd: Math.floor(spd * mult)
             };
             return { dna, colors, baseStats };
         }
@@ -1392,13 +1432,19 @@
             const dayWord = CONFIG.naming.days[Math.min(30, gameState.d - 1)];
             const myName = `${grade.cn}${monthWord.cn}${dayWord.cn}兽`;
 
+            // OPTIMIZATION A: Speed Initiative
+            // Determine who goes first based on Speed
+            const pSpd = myStats.spd;
+            const eSpd = enemyInfo.stats.spd;
+            const playerFirst = pSpd >= eSpd;
+
             battleState = {
                 isRanked: isRanked,
                 isBoss: isBoss,
                 bossId: bossId,
                 p: { ...myStats, maxHp: myStats.hp, curHp: myStats.hp, name: myName, pts: myPts },
                 e: { ...enemyInfo.stats, maxHp: enemyInfo.stats.hp, curHp: enemyInfo.stats.hp, name: enemyInfo.name, pts: enemyInfo.rankPoints },
-                turn: 0
+                turn: playerFirst ? 0 : 1 // 0 = Player, 1 = Enemy
             };
 
             elements.playerSprite.innerHTML = renderCat(gameState.dna, gameState.colors, 96);
@@ -1406,15 +1452,13 @@
             const enemyEl = elements.enemySprite;
 
             if (isBoss && enemyInfo.renderFunc) {
-                // Boss Logic: Use specific positioning and remove scaling class
+                // Boss Logic
                 enemyEl.className = "absolute top-[35px] right-[35px] transition-transform duration-300"; 
-                // Clear inline scale if present
                 enemyEl.style.transform = '';
-                enemyEl.innerHTML = enemyInfo.renderFunc(80); // 80px size
+                enemyEl.innerHTML = enemyInfo.renderFunc(80); 
             } else {
-                // Normal Enemy Logic: Restore original classes for scaling
+                // Normal Logic
                 enemyEl.className = "cat-sprite enemy"; 
-                // Remove any inline styles that might interfere with the class
                 enemyEl.removeAttribute('style');
                 enemyEl.innerHTML = renderCat(enemyInfo.dna, enemyInfo.colors, 96);
             }
@@ -1434,6 +1478,13 @@
             const pTier = getRankTier(myPts);
             
             log("BATTLE START!");
+            // Log speed comparison
+            if (playerFirst) {
+                log(`[SPD] 你身手敏捷，抢到了先手！`);
+            } else {
+                log(`[SPD] 对方速度更快，率先发动攻击！`);
+            }
+
             if (isBoss) {
                  log(`[WARNING] 遭遇世界BOSS: ${enemyInfo.name}`);
             } else if(battleState.isRanked) {
@@ -1458,24 +1509,70 @@
             const atk = isPlayer ? battleState.p : battleState.e;
             const def = isPlayer ? battleState.e : battleState.p;
             
+            const spriteAtk = isPlayer ? elements.playerSprite : elements.enemySprite;
+            const spriteDef = isPlayer ? elements.enemySprite : elements.playerSprite;
+
+            // 1. Evasion Check (BUFFED V6.3)
+            // Base 0%. +2% per speed diff, max 35%
+            let dodgeChance = 0;
+            if (def.spd > atk.spd) {
+                dodgeChance = Math.min(0.35, Math.max(0, (def.spd - atk.spd) * 0.02));
+            }
+
+            if (Math.random() < dodgeChance) {
+                log(`${def.name} 身手敏捷，躲开了攻击！(MISS)`);
+                
+                // Trigger Dodge Animation
+                if (isPlayer) {
+                     spriteDef.classList.add('anim-dodge-p');
+                     setTimeout(() => spriteDef.classList.remove('anim-dodge-p'), 500);
+                     if (battleState.isBoss) {
+                        spriteAtk.classList.add('anim-atk-boss');
+                        setTimeout(() => spriteAtk.classList.remove('anim-atk-boss'), 300);
+                     } else {
+                        spriteAtk.classList.add('anim-atk-e');
+                        setTimeout(() => spriteAtk.classList.remove('anim-atk-e'), 300);
+                     }
+                } else {
+                    if (battleState.isBoss) {
+                         spriteDef.classList.add('anim-dodge-boss');
+                         setTimeout(() => spriteDef.classList.remove('anim-dodge-boss'), 500);
+                    } else {
+                         spriteDef.classList.add('anim-dodge-e');
+                         setTimeout(() => spriteDef.classList.remove('anim-dodge-e'), 500);
+                    }
+                    spriteAtk.classList.add('anim-atk-p');
+                    setTimeout(() => spriteAtk.classList.remove('anim-atk-p'), 300);
+                }
+
+                battleState.turn++;
+                setTimeout(nextTurn, 1000);
+                return; // SKIP DAMAGE
+            }
+
+            // 2. Damage & Crit Calculation
+            let critChance = 0.05 + (atk.spd * 0.002);
+            let isCrit = Math.random() < critChance;
             const raw = atk.atk * (0.9 + Math.random() * 0.2);
             const mit = def.def * 0.4; 
             let dmg = Math.max(1, raw - mit);
-            if(Math.random() < 0.1) { dmg *= 1.5; log("CRITICAL HIT!"); }
+            
+            if(isCrit) dmg *= 1.5;
             
             def.curHp -= dmg;
             updateHealthUI();
-            log(`${atk.name} 造成 ${dmg.toFixed(1)} 伤害`);
-
-            const spriteAtk = isPlayer ? elements.playerSprite : elements.enemySprite;
-            const spriteDef = isPlayer ? elements.enemySprite : elements.playerSprite;
             
-            // Animation handling
+            if (isCrit) {
+                log(`CRITICAL HIT! ${atk.name} 造成 ${dmg.toFixed(1)} 暴击伤害`);
+            } else {
+                log(`${atk.name} 造成 ${dmg.toFixed(1)} 伤害`);
+            }
+
+            // Animation handling (Hit)
             if (isPlayer) {
                 spriteAtk.classList.add('anim-atk-p');
                 setTimeout(() => spriteAtk.classList.remove('anim-atk-p'), 300);
             } else {
-                // Enemy attacking
                 if (battleState.isBoss) {
                      spriteAtk.classList.add('anim-atk-boss');
                      setTimeout(() => spriteAtk.classList.remove('anim-atk-boss'), 300);
@@ -1485,25 +1582,55 @@
                 }
             }
             
-            setTimeout(() => {
-                if (isPlayer) {
-                    // Player hit enemy
-                    if (battleState.isBoss) {
-                        spriteDef.classList.add('anim-hit-boss');
-                        setTimeout(() => spriteDef.classList.remove('anim-hit-boss'), 400);
-                    } else {
-                        spriteDef.classList.add('anim-hit-e');
-                        setTimeout(() => spriteDef.classList.remove('anim-hit-e'), 400);
-                    }
-                } else {
-                    // Enemy hit player
-                    spriteDef.classList.add('anim-hit-p');
-                    setTimeout(() => spriteDef.classList.remove('anim-hit-p'), 400);
+            // Hit Effect
+            let hitClass = '';
+            if (isPlayer) {
+                hitClass = battleState.isBoss ? 'anim-hit-boss' : 'anim-hit-e';
+                if (isCrit) hitClass = 'anim-crit-e';
+            } else {
+                hitClass = 'anim-hit-p';
+                if (isCrit) hitClass = 'anim-crit-p';
+            }
+            spriteDef.classList.add(hitClass);
+            setTimeout(() => spriteDef.classList.remove(hitClass), isCrit ? 500 : 400);
+
+            // 3. Counterattack Check (NEW V6.3)
+            // Trigger AFTER damage, only if Defender is alive
+            if (def.curHp > 0) {
+                let counterChance = 0.05; // Base 5%
+                if (def.def > atk.def) {
+                    counterChance += Math.min(0.15, (def.def - atk.def) * 0.01); // +1% per def diff, max +15%
                 }
-                
+                // Hard Cap at 20%
+                counterChance = Math.min(0.20, counterChance);
+
+                if (Math.random() < counterChance) {
+                    const reflectDmg = Math.max(1, dmg * 0.3); // 30% Reflection
+                    atk.curHp -= reflectDmg;
+                    
+                    // Delay slightly to let hit animation finish first
+                    setTimeout(() => {
+                        updateHealthUI();
+                        log(`[COUNTER] ${def.name} 防御反击！弹回 ${reflectDmg.toFixed(1)} 伤害`);
+                        
+                        // Counter Animation (Flash)
+                        spriteDef.classList.add('anim-counter');
+                        setTimeout(() => spriteDef.classList.remove('anim-counter'), 400);
+                        
+                        // Small shake on attacker
+                        let counterHitClass = isPlayer ? 'anim-hit-p' : (battleState.isBoss ? 'anim-hit-boss' : 'anim-hit-e');
+                        spriteAtk.classList.add(counterHitClass);
+                        setTimeout(() => spriteAtk.classList.remove(counterHitClass), 300);
+
+                    }, 400);
+                }
+            }
+
+            // Next Turn Delay
+            setTimeout(() => {
                 battleState.turn++;
-                setTimeout(nextTurn, 1000);
-            }, 300);
+                nextTurn();
+            }, 1000);
         }
 
         function endBattle() {
@@ -1719,12 +1846,22 @@
                 // Formula: Base * (1 + Level * 0.05)
                 const lvlMult = 1 + (boss.level * 0.05);
 
-                // Step D: Final Calculation & Assignment
-                // Boss HP gets an additional 10% bonus ( * 1.10 )
-                boss.hp = Math.floor(s.hp * lvlMult * 1.10); 
-                boss.atk = Math.floor(s.atk * lvlMult);
-                boss.def = Math.floor(s.def * lvlMult);
-                boss.spd = Math.floor(s.spd * lvlMult);
+                // OPTIMIZATION A: Boss Stat Floor (Boss Stat Guarantee)
+                // Ensure high level bosses aren't weak due to bad RNG
+                let rawAtk = s.atk * lvlMult;
+                let rawDef = s.def * lvlMult;
+                let rawSpd = s.spd * lvlMult;
+                let rawHp = s.hp * lvlMult * 1.10; // Boss HP Bonus
+
+                // Floors
+                const minAtk = 20 + (boss.level * 6);
+                const minDef = 10 + (boss.level * 3);
+                const minSpd = 10 + (boss.level * 2);
+
+                boss.hp = Math.floor(rawHp); 
+                boss.atk = Math.floor(Math.max(rawAtk, minAtk));
+                boss.def = Math.floor(Math.max(rawDef, minDef));
+                boss.spd = Math.floor(Math.max(rawSpd, minSpd));
 
                 // Assign render function
                 boss.render = (size) => renderRealAvatar(boss.handle, size, boss.rarity);
