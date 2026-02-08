@@ -1685,29 +1685,52 @@
                 </div>
             `;
 
-            // 2. Define Data
+            // 2. Define Data (REMOVED HARDCODED STATS)
+            // Stats will be calculated dynamically based on Birthday + Level + Rarity
             BOSS_DATA = [
-                { id: 'trends', name: 'Trends', handle: 'trendsdotfun', level: 3, m: 6, d: 9, rarity: 'Golden', hp: 154, atk: 35, def: 15 }, 
-                { id: 'jov', name: 'Jov', handle: 'jove_BAD', level: 4, m: 8, d: 18, rarity: 'Common', hp: 176, atk: 45, def: 20 },
-                { id: 'leek', name: '韭菜眼镜', handle: '0x7ohnson', level: 4, m: 1, d: 20, rarity: 'EPIC', hp: 198, atk: 50, def: 22 },
-                { id: 'mia', name: '凡喵', handle: 'miaobsc', level: 4, m: 1, d: 13, rarity: 'Golden', hp: 210, atk: 55, def: 25 },
-                { id: 'molt', name: 'Moltbook', handle: 'moltbook', level: 5, m: 1, d: 29, rarity: 'Golden', hp: 242, atk: 65, def: 28 },
-                { id: 'justin', name: 'Justin', handle: 'justinsuntron', level: 6, m: 4, d: 1, rarity: 'EPIC', hp: 286, atk: 75, def: 30 },
-                { id: 'toly', name: 'Toly', handle: 'toly', level: 7, m: 3, d: 16, rarity: 'EPIC', hp: 330, atk: 90, def: 35 },
-                { id: 'star', name: 'Star', handle: 'Star_OKX', level: 8, m: 10, d: 24, rarity: 'EPIC', hp: 396, atk: 110, def: 40 },
-                { id: 'cz', name: 'CZ', handle: 'cz_binance', level: 9, m: 11, d: 1, rarity: 'Golden', hp: 462, atk: 130, def: 50 },
-                { id: 'elon', name: 'Elon', handle: 'elonmusk', level: 10, m: 6, d: 28, rarity: 'Golden', hp: 550, atk: 150, def: 60 },
+                { id: 'trends', name: 'Trends', handle: 'trendsdotfun', level: 3, m: 6, d: 9, rarity: 'Golden' }, 
+                { id: 'jov', name: 'Jov', handle: 'jove_BAD', level: 4, m: 8, d: 18, rarity: 'Common' },
+                { id: 'leek', name: '韭菜眼镜', handle: '0x7ohnson', level: 4, m: 1, d: 20, rarity: 'EPIC' },
+                { id: 'mia', name: '凡喵', handle: 'miaobsc', level: 4, m: 1, d: 13, rarity: 'Golden' },
+                { id: 'molt', name: 'Moltbook', handle: 'moltbook', level: 5, m: 1, d: 29, rarity: 'Golden' },
+                { id: 'justin', name: 'Justin', handle: 'justinsuntron', level: 6, m: 4, d: 1, rarity: 'EPIC' },
+                { id: 'toly', name: 'Toly', handle: 'toly', level: 7, m: 3, d: 16, rarity: 'EPIC' },
+                { id: 'star', name: 'Star', handle: 'Star_OKX', level: 8, m: 10, d: 24, rarity: 'EPIC' },
+                { id: 'cz', name: 'CZ', handle: 'cz_binance', level: 9, m: 11, d: 1, rarity: 'Golden' },
+                { id: 'elon', name: 'Elon', handle: 'elonmusk', level: 10, m: 6, d: 28, rarity: 'Golden' },
                 
                 // DEBUG BOSS
-                { id: 'debug', name: 'Debug Slime', handle: 'github', level: 1, m: 1, d: 1, rarity: 'Common', hp: 50, atk: 5, def: 0 }
+                { id: 'debug', name: 'Debug Slime', handle: 'github', level: 1, m: 1, d: 1, rarity: 'Common' }
             ];
 
-            // Assign render function
+            // 3. DYNAMIC ATTRIBUTE CALCULATION LOOP
             BOSS_DATA.forEach(boss => {
+                // Step A: Map Custom Boss Rarity to Standard Rarity for Base Stats
+                let stdRarity = 'COMMON';
+                if (boss.rarity === 'Golden') stdRarity = 'SSR';
+                if (boss.rarity === 'EPIC') stdRarity = 'SR';
+
+                // Step B: Get Base Stats (Includes Birthday Seed + Rarity Multiplier)
+                const seed = boss.m * 31 + boss.d;
+                const gen = generateCatData(seed, stdRarity);
+                const s = gen.baseStats;
+
+                // Step C: Apply Level/Rank Multiplier (5% per level)
+                // Formula: Base * (1 + Level * 0.05)
+                const lvlMult = 1 + (boss.level * 0.05);
+
+                // Step D: Final Calculation & Assignment
+                // Boss HP gets an additional 10% bonus ( * 1.10 )
+                boss.hp = Math.floor(s.hp * lvlMult * 1.10); 
+                boss.atk = Math.floor(s.atk * lvlMult);
+                boss.def = Math.floor(s.def * lvlMult);
+                boss.spd = Math.floor(s.spd * lvlMult);
+
+                // Assign render function
                 boss.render = (size) => renderRealAvatar(boss.handle, size, boss.rarity);
             });
 
-            // 3. UI Setup
+            // 4. UI Setup
             setupBossUI();
         }
 
@@ -1816,7 +1839,7 @@
                 name: boss.name,
                 level: boss.level,
                 rankPoints: 9999, 
-                stats: { hp: boss.hp, atk: boss.atk, def: boss.def, spd: 10 },
+                stats: { hp: boss.hp, atk: boss.atk, def: boss.def, spd: boss.spd }, // Use calculated stats
                 renderFunc: boss.render,
                 dna: {},
                 colors: {}
