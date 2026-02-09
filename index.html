@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Birthday Catmon: Social Legends (V6.5 Pacing Update)</title>
+    <title>Birthday Catmon: Social Legends (V8.6 Data Fix)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+SC:wght@400;900&display=swap" rel="stylesheet">
     <!-- QR Code Libraries -->
@@ -233,10 +233,6 @@
         
         .anim-counter { animation: counter-flash 0.4s; }
 
-        .anim-dodge-p { animation: dodge-p 0.5s ease-out; }
-        .anim-dodge-e { animation: dodge-e 0.5s ease-out; }
-        .anim-dodge-boss { animation: dodge-boss 0.5s ease-out; }
-
         .hidden { display: none !important; }
         
         #qrcode {
@@ -368,6 +364,18 @@
             font-weight: bold;
         }
         .victory-btn:active { transform: translateY(2px); }
+        
+        /* VERSION TAG */
+        #version-tag {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            font-family: 'Press Start 2P';
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.3);
+            pointer-events: none;
+            z-index: 9999;
+        }
 
     </style>
 </head>
@@ -375,6 +383,9 @@
     
     <div id="bg-bubbles"></div>
     <div id="flash-fx" class="fixed inset-0 bg-white z-[999] pointer-events-none opacity-0 transition-opacity duration-700"></div>
+    
+    <!-- VERSION INDICATOR -->
+    <div id="version-tag">V8.6</div>
 
     <div id="app">
         <!-- 1. Init View -->
@@ -667,6 +678,7 @@
     <script>
         // --- CONFIG ---
         const SAVE_KEY = 'catmon_save_v14_fixed';
+        const DATA_VERSION = '8.6'; // Current Data Version
         const RANKS = ["新手", "见习", "普通", "精英", "资深", "专家", "大师", "宗师", "传说", "王者", "联盟冠军"];
         
         const CONFIG = {
@@ -778,7 +790,8 @@
             prog: 0, ptr: 0, dir: 1, lastTime: 0,
             isProcessingScan: false,
             // BOSS ADDITION: Track cleared bosses
-            bossCleared: [] 
+            bossCleared: [],
+            dataVersion: DATA_VERSION 
         };
 
         let html5QrCode = null; 
@@ -870,7 +883,8 @@
                 trainerName: gameState.trainerName, nameLocked: gameState.nameLocked,
                 battleRecord: gameState.battleRecord,
                 uid: gameState.uid,
-                bossCleared: gameState.bossCleared || []
+                bossCleared: gameState.bossCleared || [],
+                dataVersion: gameState.dataVersion // Save current version
             };
             localStorage.setItem(SAVE_KEY, JSON.stringify(data));
         }
@@ -879,6 +893,27 @@
             const saved = localStorage.getItem(SAVE_KEY);
             if (saved) {
                 const data = JSON.parse(saved);
+                
+                // MIGRATION LOGIC
+                if (data.dataVersion !== DATA_VERSION) {
+                    // If version mismatch (or missing), force update
+                    console.log("Migrating data from", data.dataVersion, "to", DATA_VERSION);
+                    
+                    // Force Recalculate Base Stats using the Seed (To fix old broken stats)
+                    if (data.active && data.seed) {
+                        const gen = generateCatData(data.seed, data.rarity || 'COMMON');
+                        data.baseStats = gen.baseStats; // Overwrite with normalized stats
+                    }
+                    
+                    data.dataVersion = DATA_VERSION;
+                    
+                    // Show unobtrusive notification
+                    if (elements.mainStatusText) elements.mainStatusText.innerText = `⚠️ 数据已自动更新至 V${DATA_VERSION}`;
+                    
+                    // Save back immediately
+                    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+                }
+
                 if(data.active || data.nameLocked) {
                     Object.assign(gameState, data);
                     // Generate UID if missing (legacy save support)
@@ -889,6 +924,8 @@
                     if(!gameState.battleRecord.rankPoints) gameState.battleRecord.rankPoints = 0;
                     if(!gameState.battleRecord.statWins) gameState.battleRecord.statWins = 0;
                     if(!gameState.bossCleared) gameState.bossCleared = [];
+                    gameState.dataVersion = DATA_VERSION; // Ensure running state is current
+                    
                     deriveVisuals(); 
                     return true;
                 }
@@ -987,6 +1024,7 @@
             const data = generateCatData(gameState.seed, gameState.rarity);
             gameState.baseStats = data.baseStats;
             gameState.active = true;
+            gameState.dataVersion = DATA_VERSION; // Set version
             deriveVisuals();
 
             switchView('viewGame');
@@ -1782,7 +1820,8 @@
                 battleRecord: { wins: 0, losses: 0, rankPoints: 0, statWins: 0 },
                 dna: {}, colors: {},
                 prog: 0, ptr: 0, dir: 1, lastTime: 0,
-                bossCleared: []
+                bossCleared: [],
+                dataVersion: DATA_VERSION
             };
 
             // 3. Reset UI Inputs
@@ -1856,10 +1895,12 @@
 
                 // REMOVED: Boss Stat Floor (Boss Stat Guarantee) - As requested in V6.4
                 // Ensure high level bosses rely purely on their formula
-                let rawAtk = s.atk * lvlMult * 0.70;
+                
+                // UPDATE V8.6: Reduced ATK (0.7x) and Increased HP (2.0x + 150)
+                let rawAtk = (s.atk * lvlMult) * 0.70;
                 let rawDef = s.def * lvlMult;
                 let rawSpd = s.spd * lvlMult;
-                let rawHp = (s.hp * lvlMult * 2.00) + 150; // Boss HP Bonus remains
+                let rawHp = (s.hp * lvlMult * 2.0) + 150; 
 
                 boss.hp = Math.floor(rawHp); 
                 boss.atk = Math.floor(rawAtk);
