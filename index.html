@@ -1703,7 +1703,7 @@
                 const eTier = getRankTier(battleState.e.pts);
                 
                 if (eTier >= pTier) {
-                    const ptsGain = Math.floor(Math.random() * 3) + 1; 
+                    const ptsGain = 2; 
                     gameState.battleRecord.rankPoints = Math.min(100, (gameState.battleRecord.rankPoints || 0) + ptsGain);
                     gameState.battleRecord.statWins = (gameState.battleRecord.statWins || 0) + 1;
                     
@@ -1874,7 +1874,7 @@
                 { id: 'elon', name: 'Elon', handle: 'elonmusk', level: 10, m: 6, d: 28, rarity: 'Golden' },
                 
                 // DEBUG BOSS
-                { id: 'debug', name: 'Debug Slime', handle: 'github', level: 1, m: 1, d: 1, rarity: 'Common' }
+                //{ id: 'debug', name: 'Debug Slime', handle: 'github', level: 1, m: 1, d: 1, rarity: 'Common' }
             ];
 
             // 3. DYNAMIC ATTRIBUTE CALCULATION LOOP
